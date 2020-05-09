@@ -8,9 +8,9 @@
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
     <ProjectGuid>{1FE49287-4EAB-02DD-2C33-7938217EBB72}</ProjectGuid>
     <OutputType>WinExe</OutputType>
-    <StartupObject>TwinsaityEditor.TwinsanityEditor</StartupObject>
-    <RootNamespace>TwinsaityEditor</RootNamespace>
-    <AssemblyName>TwinsaityEditor</AssemblyName>
+    <StartupObject>TwinsanityEditor.TwinsanityEditor</StartupObject>
+    <RootNamespace>TwinsanityEditor</RootNamespace>
+    <AssemblyName>TwinsanityEditor</AssemblyName>
     <FileAlignment>512</FileAlignment>
     <MyType>WindowsForms</MyType>
     <TargetFrameworkVersion>v4.5</TargetFrameworkVersion>
@@ -173,17 +173,24 @@
     <Compile Include="Controllers\AIPathController.cs" />
     <Compile Include="Controllers\ArmatureModelController.cs" />
     <Compile Include="Controllers\ArmatureModelXController.cs" />
+    <Compile Include="Controllers\CameraController.cs" />
+    <Compile Include="Controllers\CollisionSurfaceController.cs" />
     <Compile Include="Controllers\Controller.cs" />
     <Compile Include="Controllers\ColDataController.cs" />
+    <Compile Include="Controllers\DynamicSceneryDataController.cs" />
     <Compile Include="Controllers\FileController.cs" />
     <Compile Include="Controllers\ChunkLinksController.cs" />
     <Compile Include="Controllers\GraphicsInfoController.cs" />
     <Compile Include="Controllers\MaterialDController.cs" />
+    <Compile Include="Controllers\MeshXController.cs" />
+    <Compile Include="Controllers\ParticleDataController.cs" />
+    <Compile Include="Controllers\SceneryDataController.cs" />
     <Compile Include="Controllers\SkydomeController.cs" />
     <Compile Include="Controllers\PathController.cs" />
     <Compile Include="Controllers\AIPositionController.cs" />
     <Compile Include="Controllers\PositionController.cs" />
     <Compile Include="Controllers\SEController.cs" />
+    <Compile Include="Controllers\SpecialModelController.cs" />
     <Compile Include="Controllers\TriggerController.cs" />
     <Compile Include="Controllers\InstanceController.cs" />
     <Compile Include="Controllers\ScriptController.cs" />
@@ -194,6 +201,13 @@
     <Compile Include="Controllers\TextureController.cs" />
     <Compile Include="Controllers\SectionController.cs" />
     <Compile Include="Controllers\ItemController.cs" />
+    <Compile Include="Controllers\InstanceTemplateController.cs" />
+    <Compile Include="Editors\CameraEditor.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Editors\CameraEditor.Designer.cs">
+      <DependentUpon>CameraEditor.cs</DependentUpon>
+    </Compile>
     <Compile Include="Editors\ChunkLinksEditor.cs">
       <SubType>Form</SubType>
     </Compile>
@@ -205,6 +219,18 @@
     </Compile>
     <Compile Include="Editors\InstanceEditor.Designer.cs">
       <DependentUpon>InstanceEditor.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Editors\ParticleEditor.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Editors\ParticleEditor.Designer.cs">
+      <DependentUpon>ParticleEditor.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Editors\SceneryEditor.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Editors\SceneryEditor.Designer.cs">
+      <DependentUpon>SceneryEditor.cs</DependentUpon>
     </Compile>
     <Compile Include="Editors\TriggerEditor.cs">
       <SubType>Form</SubType>
@@ -300,11 +326,20 @@
     </Compile>
   </ItemGroup>
   <ItemGroup>
+    <EmbeddedResource Include="Editors\CameraEditor.resx">
+      <DependentUpon>CameraEditor.cs</DependentUpon>
+    </EmbeddedResource>
     <EmbeddedResource Include="Editors\ChunkLinksEditor.resx">
       <DependentUpon>ChunkLinksEditor.cs</DependentUpon>
     </EmbeddedResource>
     <EmbeddedResource Include="Editors\InstanceEditor.resx">
       <DependentUpon>InstanceEditor.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Editors\ParticleEditor.resx">
+      <DependentUpon>ParticleEditor.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Editors\SceneryEditor.resx">
+      <DependentUpon>SceneryEditor.cs</DependentUpon>
     </EmbeddedResource>
     <EmbeddedResource Include="Editors\TriggerEditor.resx">
       <DependentUpon>TriggerEditor.cs</DependentUpon>
@@ -348,9 +383,7 @@
   </ItemGroup>
   <ItemGroup>
     <EmbeddedResource Include="ico.ico" />
-    <None Include="Fonts\arial.ttf">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </None>
+    <None Include="Fonts\arial.ttf" />
     <None Include="OpenTK.dll.config" />
     <None Include="packages.config" />
     <None Include="Properties\Settings.settings">

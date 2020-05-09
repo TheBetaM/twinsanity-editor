@@ -16,7 +16,7 @@ namespace Twinsanity
         private byte m, pal_flag;
         private byte[] tex_space = new byte[32], unk = new byte[176];
         private byte[] pixels, mippixels;
-        private Color[] palette, pixel_data;
+        public Color[] palette, pixel_data;
         
         public int Width { get => 1 << w; }
         public int Height { get => 1 << h; }

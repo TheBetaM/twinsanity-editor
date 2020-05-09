@@ -1,7 +1,7 @@
 ﻿using OpenTK.Graphics.OpenGL;
 using System;
 
-namespace TwinsaityEditor
+namespace TwinsanityEditor
 {
     public class VertexBufferData
     {
@@ -11,11 +11,27 @@ namespace TwinsaityEditor
         public int[] VtxCounts { get; set; }
         public uint[] VtxInd { get; set; }
         public Vertex[] Vtx { get; set; }
+        public BufferType Type { get; set; }
+        public int LinkID { get; set; }
+        public int LayerID { get; set; }
+
+        public enum BufferType
+        {
+            Undefined = 0,
+            Object = 1,
+            Skydome = 2,
+            Scenery = 3,
+            Collision = 4,
+            ExtraScenery = 5,
+            ExtraCollision = 6,
+            ExtraObject = 7,
+        }
 
         public VertexBufferData()
         {
             ID = GL.GenBuffer();
             LastSize = 0;
+            Type = BufferType.Undefined;
         }
 
         public void DrawAll(PrimitiveType primitive_type, BufferPointerFlags flags)

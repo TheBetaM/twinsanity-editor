@@ -1,7 +1,7 @@
 ﻿using System.Windows.Forms;
 using Twinsanity;
 
-namespace TwinsaityEditor
+namespace TwinsanityEditor
 {
     public partial class ColDataEditor : Form
     {

@@ -2,7 +2,7 @@
 using System.Drawing;
 using System.Runtime.InteropServices;
 
-namespace TwinsaityEditor
+namespace TwinsanityEditor
 {
     [StructLayout(LayoutKind.Sequential)]
     public struct Vertex
@@ -76,6 +76,9 @@ namespace TwinsaityEditor
         Position,
         Path,
         Instance,
-        Trigger
+        Trigger,
+        Particles,
+        Scenery,
+        Cameras,
     };
 }

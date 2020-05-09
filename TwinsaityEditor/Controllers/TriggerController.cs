@@ -1,13 +1,13 @@
 ﻿using Twinsanity;
 using System;
 
-namespace TwinsaityEditor
+namespace TwinsanityEditor
 {
     public class TriggerController : ItemController
     {
         public new Trigger Data { get; set; }
 
-        public TriggerController(MainForm topform, Trigger item) : base (topform, item)
+        public TriggerController(MainForm topform, Trigger item, FileController targetFile) : base(topform, item, targetFile)
         {
             Data = item;
             AddMenu("Open editor", Menu_OpenEditor);

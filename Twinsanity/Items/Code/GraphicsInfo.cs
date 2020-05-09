@@ -175,10 +175,7 @@ namespace Twinsanity
             long headersize = reader.BaseStream.Position;
             Remain = reader.ReadBytes(size - (int)(headersize - pre_pos));
 
-            //ItemSize = reader.BaseStream.Position - pre_pos;
-            //Console.WriteLine("Target Size: " + size);
-            //Console.WriteLine("End Size: " + ItemSize);
-            //Console.WriteLine("\n");
+
 
             ItemSize = size;
             reader.BaseStream.Position = pre_pos;

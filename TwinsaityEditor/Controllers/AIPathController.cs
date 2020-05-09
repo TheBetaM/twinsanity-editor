@@ -1,12 +1,12 @@
 ﻿using Twinsanity;
 
-namespace TwinsaityEditor
+namespace TwinsanityEditor
 {
     public class AIPathController : ItemController
     {
         public new AIPath Data { get; set; }
 
-        public AIPathController(MainForm topform, AIPath item) : base (topform, item)
+        public AIPathController(MainForm topform, AIPath item, FileController targetFile) : base(topform, item, targetFile)
         {
             Data = item;
         }

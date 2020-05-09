@@ -3,7 +3,7 @@ using System.Windows.Forms;
 using System.Collections.Generic;
 using Twinsanity;
 
-namespace TwinsaityEditor
+namespace TwinsanityEditor
 {
     public partial class TriggerEditor : Form
     {
@@ -109,7 +109,7 @@ namespace TwinsaityEditor
             }
             Trigger new_trigger = new Trigger { ID = id, Instances = new List<ushort>(), Coords = new Pos[] { new Pos(0, 0, 0, 1), new Pos(0, 0, 0, 1), new Pos(0, 0, 0, 1) } };
             controller.Data.AddItem(id, new_trigger);
-            ((MainForm)Tag).GenTreeNode(new_trigger, controller);
+            ((MainForm)Tag).GenTreeNode(new_trigger, controller, controller.MainFile);
             trigger = new_trigger;
             listBox1.Items.Add($"ID {trigger.ID}");
             controller.UpdateTextBox();

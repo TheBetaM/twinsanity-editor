@@ -1,12 +1,12 @@
 ﻿using Twinsanity;
 
-namespace TwinsaityEditor
+namespace TwinsanityEditor
 {
     public class TextureController : ItemController
     {
         public new Texture Data { get; set; }
 
-        public TextureController(MainForm topform, Texture item) : base (topform, item)
+        public TextureController(MainForm topform, Texture item, FileController targetFile) : base(topform, item, targetFile)
         {
             Data = item;
         }

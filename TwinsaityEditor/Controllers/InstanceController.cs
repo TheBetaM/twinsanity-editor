@@ -1,13 +1,13 @@
 ﻿using Twinsanity;
 using System;
 
-namespace TwinsaityEditor
+namespace TwinsanityEditor
 {
     public class InstanceController : ItemController
     {
         public new Instance Data { get; set; }
 
-        public InstanceController(MainForm topform, Instance item) : base (topform, item)
+        public InstanceController(MainForm topform, Instance item, FileController targetFile) : base(topform, item, targetFile)
         {
             Data = item;
             AddMenu("Open editor", Menu_OpenEditor);

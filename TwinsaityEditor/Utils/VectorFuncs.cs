@@ -1,7 +1,7 @@
 ﻿using OpenTK;
 using Twinsanity;
 
-namespace TwinsaityEditor
+namespace TwinsanityEditor
 {
     public static class VectorFuncs
     {

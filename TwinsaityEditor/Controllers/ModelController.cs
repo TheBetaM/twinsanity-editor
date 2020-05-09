@@ -1,14 +1,15 @@
 ﻿using Twinsanity;
+using System;
 using System.IO;
 using System.Windows.Forms;
 
-namespace TwinsaityEditor
+namespace TwinsanityEditor
 {
     public class ModelController : ItemController
     {
         public new Model Data { get; set; }
 
-        public ModelController(MainForm topform, Model item) : base (topform, item)
+        public ModelController(MainForm topform, Model item, FileController targetFile) : base(topform, item, targetFile)
         {
             Data = item;
             AddMenu("Export mesh to PLY", Menu_ExportPLY);

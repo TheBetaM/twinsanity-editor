@@ -2,7 +2,7 @@
 using System;
 using System.Windows.Forms;
 
-namespace TwinsaityEditor
+namespace TwinsanityEditor
 {
     public class SkydomeViewer : ThreeDViewer
     {
@@ -19,7 +19,7 @@ namespace TwinsaityEditor
             this.sky = sky;
             file = sky.MainFile;
             zFar = 100F;
-            InitVBO(sky.Data.ModelIDs.Length);
+            InitVBO(sky.Data.ModelIDs.Length, true);
             pform.Text = "Loading models...";
             LoadModels();
         }
@@ -27,7 +27,7 @@ namespace TwinsaityEditor
         protected override void RenderHUD()
         {
             base.RenderHUD();
-            RenderString2D("Press L to toggle lighting\nPress X to toggle wireframe", 0, Height, 12, System.Drawing.Color.White, TextAnchor.BotLeft);
+            RenderString2D("Press L to toggle lighting\nPress X to toggle wireframe", 0, Height, 12, 14, System.Drawing.Color.White, TextAnchor.BotLeft);
         }
 
         protected override void RenderObjects()

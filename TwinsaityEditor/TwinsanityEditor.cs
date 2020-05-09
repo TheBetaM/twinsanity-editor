@@ -5,7 +5,7 @@ using System.Runtime.InteropServices;
 using System.Windows.Forms;
 
 
-namespace TwinsaityEditor
+namespace TwinsanityEditor
 {
     internal static class TwinsanityEditor
     {

@@ -1,4 +1,4 @@
-﻿namespace TwinsaityEditor.Workers
+﻿namespace TwinsanityEditor.Workers
 {
     partial class TextureImport
     {

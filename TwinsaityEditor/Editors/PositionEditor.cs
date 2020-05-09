@@ -1,7 +1,7 @@
 ﻿using System.Windows.Forms;
 using Twinsanity;
 
-namespace TwinsaityEditor
+namespace TwinsanityEditor
 {
     public partial class PositionEditor : Form
     {
@@ -70,7 +70,7 @@ namespace TwinsaityEditor
             }
             Position new_pos = new Position { ID = id, Pos = new Pos(0, 0, 0, 1) };
             controller.Data.AddItem(id, new_pos);
-            ((MainForm)Tag).GenTreeNode(new_pos, controller);
+            ((MainForm)Tag).GenTreeNode(new_pos, controller, controller.MainFile);
             pos = new_pos;
             listBox1.Items.Add($"ID {pos.ID}");
             controller.UpdateText();
@@ -162,7 +162,7 @@ namespace TwinsaityEditor
             }
             Position new_pos = new Position { ID = id, Pos = new Pos(old_pos.Pos.X, old_pos.Pos.Y + 1f, old_pos.Pos.Z, 1) };
             controller.Data.AddItem(id, new_pos);
-            ((MainForm)Tag).GenTreeNode(new_pos, controller);
+            ((MainForm)Tag).GenTreeNode(new_pos, controller, controller.MainFile);
             pos = new_pos;
             listBox1.Items.Add($"ID {pos.ID}");
             controller.UpdateText();

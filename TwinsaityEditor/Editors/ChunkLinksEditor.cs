@@ -1,10 +1,10 @@
 ﻿using OpenTK;
 using System;
 using System.Windows.Forms;
-using TwinsaityEditor.Utils;
+using TwinsanityEditor.Utils;
 using Twinsanity;
 
-namespace TwinsaityEditor
+namespace TwinsanityEditor
 {
     public partial class ChunkLinksEditor : Form
     {

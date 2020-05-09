@@ -1,13 +1,13 @@
 ﻿using System;
 using Twinsanity;
 
-namespace TwinsaityEditor
+namespace TwinsanityEditor
 {
     public class ChunkLinksController : ItemController
     {
         public new ChunkLinks Data { get; set; }
 
-        public ChunkLinksController(MainForm topform, ChunkLinks item) : base (topform, item)
+        public ChunkLinksController(MainForm topform, ChunkLinks item, FileController targetFile) : base(topform, item, targetFile)
         {
             Data = item;
             AddMenu("Open editor", Menu_OpenEditor);

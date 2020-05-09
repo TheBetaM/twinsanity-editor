@@ -1,6 +1,6 @@
 ﻿using System.Windows.Forms;
 
-namespace TwinsaityEditor
+namespace TwinsanityEditor
 {
     public class ModelViewer : MeshViewer
     {

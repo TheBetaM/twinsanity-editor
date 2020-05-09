@@ -6,33 +6,53 @@ using System.Drawing;
 using System.Windows.Forms;
 using Twinsanity;
 
-namespace TwinsaityEditor
+namespace TwinsanityEditor
 {
     public class RMViewer : ThreeDViewer
     {
         private static readonly int circle_res = 16;
+        private static readonly int reserved_layers = 7;
+        private int static_layers = 0;
+        private int scenery_starting_layer = 0; //Temporary!! while there can only be a fixed amount of scenery
+        private int scenery_layer = 0; //ditto
 
-        private bool show_col_nodes, show_triggers, show_cams, wire_col, sm2_links, obj_models;
+        private bool show_col_nodes, show_triggers, show_cams, wire_col, sm2_links, obj_models, show_col, show_inst, show_pos, show_hurtzones, show_invis, show_scenery, show_skydome, show_linked_chunks;
         private FileController file;
         private ChunkLinks links;
+
+        private List<DefaultEnums.SurfaceTypes> Surf_Walkable = new List<DefaultEnums.SurfaceTypes>()
+        {
+            DefaultEnums.SurfaceTypes.SURF_DEFAULT, DefaultEnums.SurfaceTypes.SURF_GENERIC_MEDIUM_SLIPPY, DefaultEnums.SurfaceTypes.SURF_GENERIC_MEDIUM_SLIPPY_RIGID_ONLY, DefaultEnums.SurfaceTypes.SURF_GENERIC_SLIGHTLY_SLIPPY, DefaultEnums.SurfaceTypes.SURF_GLASS_WALL,
+            DefaultEnums.SurfaceTypes.SURF_HACK_RAIL, DefaultEnums.SurfaceTypes.SURF_ICE, DefaultEnums.SurfaceTypes.SURF_ICE_LOW_SLIPPY, DefaultEnums.SurfaceTypes.SURF_NORMAL_GRASS, DefaultEnums.SurfaceTypes.SURF_NORMAL_METAL,
+            DefaultEnums.SurfaceTypes.SURF_NORMAL_MUD, DefaultEnums.SurfaceTypes.SURF_NORMAL_ROCK, DefaultEnums.SurfaceTypes.SURF_NORMAL_SAND, DefaultEnums.SurfaceTypes.SURF_NORMAL_SNOW,
+            DefaultEnums.SurfaceTypes.SURF_NORMAL_STONE_TILES, DefaultEnums.SurfaceTypes.SURF_NORMAL_WATER, DefaultEnums.SurfaceTypes.SURF_NORMAL_WOOD, DefaultEnums.SurfaceTypes.SURF_SLIPPY_METAL,
+            DefaultEnums.SurfaceTypes.SURF_SLIPPY_ROCK, DefaultEnums.SurfaceTypes.SURF_STICKY_SNOW
+        };
+        private List<DefaultEnums.SurfaceTypes> Surf_Hurt = new List<DefaultEnums.SurfaceTypes>()
+        {
+            DefaultEnums.SurfaceTypes.SURF_DROWNING_PLANE, DefaultEnums.SurfaceTypes.SURF_FALL_THRU_DEATH, DefaultEnums.SurfaceTypes.SURF_GENERIC_INSTANT_DEATH, DefaultEnums.SurfaceTypes.SURF_LAVA, DefaultEnums.SurfaceTypes.SURF_NONSOLID_ELECTRIC_DEATH,
+        };
+        private List<DefaultEnums.SurfaceTypes> Surf_Invis = new List<DefaultEnums.SurfaceTypes>()
+        {
+             DefaultEnums.SurfaceTypes.SURF_BLOCK_AI_ONLY, DefaultEnums.SurfaceTypes.SURF_BLOCK_PLAYER, DefaultEnums.SurfaceTypes.SURF_CAMERA_BLOCKING,
+        };
+
+        private List<DefaultEnums.ObjectID> WoodCrates = new List<DefaultEnums.ObjectID>()
+        {
+            DefaultEnums.ObjectID.AKUAKUCRATE, DefaultEnums.ObjectID.AMMOCRATESMALL, DefaultEnums.ObjectID.BASICCRATE, DefaultEnums.ObjectID.CHECKPOINTCRATE, DefaultEnums.ObjectID.EXTRALIFECRATE, DefaultEnums.ObjectID.EXTRALIFECRATECORTEX, DefaultEnums.ObjectID.EXTRALIFECRATENINA,
+            DefaultEnums.ObjectID.LEVELCRATE, DefaultEnums.ObjectID.MULTIPLEHITCRATE, DefaultEnums.ObjectID.SURPRISECRATE, DefaultEnums.ObjectID.WOODENSPRINGCRATE
+        };
 
         public RMViewer(FileController file, ref Form pform)
         {
             //initialize variables here
-            show_col_nodes = show_triggers = wire_col = show_cams = false;
-            sm2_links = true;
-            obj_models = true;
+            show_col_nodes = show_triggers = wire_col = show_cams = show_scenery = show_linked_chunks = false;
+            sm2_links = obj_models = show_col = show_inst = show_hurtzones = show_pos = show_skydome = show_invis = show_hud = true;
             this.file = file;
             Tag = pform;
-            if (file.Data.Type == TwinsFile.FileType.RM2)
-            {
-                int ObjectModelPool = 2000; // model limit
-                InitVBO(ObjectModelPool);
-            }
-            else
-            {
-                InitVBO(6);
-            }
+            static_layers = 0;
+            int ObjectModelPool = 4000; // model limit
+            InitVBO(ObjectModelPool, false);
             if (file.DataAux != null && file.DataAux.ContainsItem(5))
             {
                 links = file.DataAux.GetItem<ChunkLinks>(5);
@@ -41,12 +61,43 @@ namespace TwinsaityEditor
             {
                 if (file.Data.GetItem<ColData>(9).Size >= 12)
                 {
-                    pform.Text = "Loading collision tree...";
-                    LoadColTree();
+                    for (int i = 0; i < 28; i++)
+                    {
+                        pform.Text = "Loading collision tree (" + i + ")...";
+                        LoadColTree(file, i, false, new Matrix4(), 0);
+                    }
                     pform.Text = "Loading collision nodes...";
                     LoadColNodes();
                 }
             }
+            if (file.DataAux != null)
+            {
+                SceneryDataController scenery_sec = file.AuxCont.GetItem<SceneryDataController>(0);
+                SectionController skydome_sec = file.AuxCont.GetItem<SectionController>(6).GetItem<SectionController>(8);
+                if (file.DataAux.Type == TwinsFile.FileType.SM2)
+                {
+                    if (scenery_sec.Data.SkydomeID != 0 && skydome_sec.Data.ContainsItem(scenery_sec.Data.SkydomeID))
+                    {
+                        pform.Text = "Loading skydome...";
+                        LoadSkydome();
+                    }
+                    scenery_starting_layer = reserved_layers + static_layers;
+                    scenery_layer = 0;
+                    pform.Text = "Loading scenery...";
+                    LoadScenery(file.AuxCont, false, new Matrix4(), 0, false);
+                    pform.Text = "Loading dynamic scenery...";
+                    LoadDynamicScenery(file.AuxCont, false, new Matrix4(), 0);
+                }
+                pform.Text = "Loading lights...";
+                LoadLights();
+                if (links.Links.Count > 0)
+                {
+                    pform.Text = "Loading linked chunks...";
+                    LoadAllLinkedChunks();
+                }
+            }
+            pform.Text = "Loading particles...";
+            LoadParticles();
             pform.Text = "Loading instances...";
             LoadInstances();
             pform.Text = "Loading positions...";
@@ -58,9 +109,151 @@ namespace TwinsaityEditor
 
         protected override void RenderHUD()
         {
+            if (!show_hud)
+            {
+                return;
+            }
             base.RenderHUD();
-            RenderString2D("Press C to toggle collision nodes\nPress X to toggle collision tree wireframe\nPress T to toggle object triggers\nPress Y to toggle camera triggers\nPress V to toggle object models", 0, Height, 10, Color.White, TextAnchor.BotLeft);
-            RenderString2D("X: " + (-pos.X) + "\n\nY: " + pos.Y + "\n\nZ: " + pos.Z, 0, Height - 54, 12, Color.White, TextAnchor.BotLeft);
+            string longDisp = "";
+            longDisp += " /: SCEN / ";
+            if (show_scenery)
+            {
+                longDisp += "ON\n";
+            }
+            else
+            {
+                longDisp += "OFF\n";
+            }
+            longDisp += " 1: COLL / ";
+            if (show_col)
+            {
+                longDisp += "ON\n";
+            }
+            else
+            {
+                longDisp += "OFF\n";
+            }
+            longDisp += " 2: HURT / ";
+            if (show_hurtzones)
+            {
+                longDisp += "ON\n";
+            }
+            else
+            {
+                longDisp += "OFF\n";
+            }
+            longDisp += " 3: INVI / ";
+            if (show_invis)
+            {
+                longDisp += "ON\n";
+            }
+            else
+            {
+                longDisp += "OFF\n";
+            }
+            longDisp += " 4: OBJE / ";
+            if (obj_models)
+            {
+                longDisp += "ON\n";
+            }
+            else
+            {
+                longDisp += "OFF\n";
+            }
+            longDisp += " 5: CLIN / ";
+            if (sm2_links)
+            {
+                longDisp += "ON\n";
+            }
+            else
+            {
+                longDisp += "OFF\n";
+            }
+            longDisp += " 6: TRIG / ";
+            if (show_triggers)
+            {
+                longDisp += "ON\n";
+            }
+            else
+            {
+                longDisp += "OFF\n";
+            }
+            longDisp += " 7: CAMT / ";
+            if (show_cams)
+            {
+                longDisp += "ON\n";
+            }
+            else
+            {
+                longDisp += "OFF\n";
+            }
+            longDisp += " 8: INST / ";
+            if (show_inst)
+            {
+                longDisp += "ON\n";
+            }
+            else
+            {
+                longDisp += "OFF\n";
+            }
+            longDisp += " 9: POSI / ";
+            if (show_pos)
+            {
+                longDisp += "ON\n";
+            }
+            else
+            {
+                longDisp += "OFF\n";
+            }
+            longDisp += " 0: SKYD / ";
+            if (show_skydome)
+            {
+                longDisp += "ON\n";
+            }
+            else
+            {
+                longDisp += "OFF\n";
+            }
+            longDisp += " -: VLIN / ";
+            if (show_linked_chunks)
+            {
+                longDisp += "ON\n";
+            }
+            else
+            {
+                longDisp += "OFF\n";
+            }
+            longDisp += " =: DISP / ";
+            if (show_hud)
+            {
+                longDisp += "ON\n";
+            }
+            else
+            {
+                longDisp += "OFF\n";
+            }
+            longDisp += " {: WIRE / ";
+            if (wire_col)
+            {
+                longDisp += "ON\n";
+            }
+            else
+            {
+                longDisp += "OFF\n";
+            }
+            longDisp += " }: COLN / ";
+            if (show_col_nodes)
+            {
+                longDisp += "ON";
+            }
+            else
+            {
+                longDisp += "OFF";
+            }
+
+            RenderString2D(longDisp, 2, Height, 14, 18, Color.Black, TextAnchor.BotLeft);
+            RenderString2D(longDisp, 0, Height - 2, 14, 18, Color.White, TextAnchor.BotLeft);
+            //RenderString2D("X: " + (-pos.X) + "\nY: " + pos.Y + "\nZ: " + pos.Z, 0, Height - 24, 14, Color.White, TextAnchor.BotLeft);
         }
 
         public Vector3 GetViewerPos()
@@ -74,15 +267,65 @@ namespace TwinsaityEditor
             //draw collision
             if (file.Data.ContainsItem(9))
             {
-                GL.Enable(EnableCap.Lighting);
-                vtx[0].DrawAllElements(PrimitiveType.Triangles, BufferPointerFlags.Normal);
-                GL.Disable(EnableCap.Lighting);
+                if (show_col)
+                {
+                    GL.Enable(EnableCap.Lighting);
+                    for (int i = 0; i < reserved_layers + static_layers; i++)
+                    {
+                        if (vtx[i] != null && (vtx[i].Type == VertexBufferData.BufferType.Collision || (show_linked_chunks && vtx[i].Type == VertexBufferData.BufferType.ExtraCollision)))
+                        {
+                            if (Surf_Walkable.Contains((DefaultEnums.SurfaceTypes)vtx[i].LayerID))
+                            {
+                                vtx[i].DrawAllElements(PrimitiveType.Triangles, BufferPointerFlags.Normal);
+                            }
+                        }
+                    }
+                    GL.Disable(EnableCap.Lighting);
+                }
+
+                if (show_hurtzones)
+                {
+                    GL.Enable(EnableCap.Lighting);
+                    for (int i = 0; i < reserved_layers + static_layers; i++)
+                    {
+                        if (vtx[i] != null && (vtx[i].Type == VertexBufferData.BufferType.Collision || (show_linked_chunks && vtx[i].Type == VertexBufferData.BufferType.ExtraCollision)))
+                        {
+                            if (Surf_Hurt.Contains((DefaultEnums.SurfaceTypes)vtx[i].LayerID))
+                            {
+                                vtx[i].DrawAllElements(PrimitiveType.Triangles, BufferPointerFlags.Normal);
+                            }
+                        }
+                    }
+                    GL.Disable(EnableCap.Lighting);
+                }
+
+                if (show_invis)
+                {
+                    GL.Enable(EnableCap.Lighting);
+                    for (int i = 0; i < reserved_layers + static_layers; i++)
+                    {
+                        if (vtx[i] != null && (vtx[i].Type == VertexBufferData.BufferType.Collision || (show_linked_chunks && vtx[i].Type == VertexBufferData.BufferType.ExtraCollision)))
+                        {
+                            if (Surf_Invis.Contains((DefaultEnums.SurfaceTypes)vtx[i].LayerID))
+                            {
+                                vtx[i].DrawAllElements(PrimitiveType.Triangles, BufferPointerFlags.Normal);
+                            }
+                        }
+                    }
+                    GL.Disable(EnableCap.Lighting);
+                }
 
                 if (wire_col)
                 {
                     GL.PolygonMode(MaterialFace.FrontAndBack, PolygonMode.Line);
                     GL.Color3(Color.Black);
-                    vtx[0].DrawAllElements(PrimitiveType.Triangles, BufferPointerFlags.NormalNoCol);
+                    for (int i = 6; i < reserved_layers; i++)
+                    {
+                        if (vtx[i] != null && (vtx[i].Type == VertexBufferData.BufferType.Collision || (show_linked_chunks && vtx[i].Type == VertexBufferData.BufferType.ExtraCollision)))
+                        {
+                            vtx[i].DrawAllElements(PrimitiveType.Triangles, BufferPointerFlags.NormalNoCol);
+                        }
+                    }
                     GL.PolygonMode(MaterialFace.FrontAndBack, PolygonMode.Fill);
                 }
 
@@ -96,9 +339,51 @@ namespace TwinsaityEditor
             if (file.Data.Type == TwinsFile.FileType.RM2 && obj_models)
             {
                 GL.Enable(EnableCap.Lighting);
-                for (int i = 5; i < vtx.Length; i++)
+                for (int i = reserved_layers + static_layers; i < vtx.Length; i++)
                 {
-                    if (vtx[i] != null)
+                    if (vtx[i] != null && vtx[i].Type == VertexBufferData.BufferType.Object)
+                    {
+                        vtx[i].DrawAllElements(PrimitiveType.Triangles, BufferPointerFlags.Normal);
+                    }
+                }
+                GL.Disable(EnableCap.Lighting);
+            }
+
+            //skydome
+            if (file.Data.Type == TwinsFile.FileType.RM2 && show_skydome)
+            {
+                GL.Enable(EnableCap.Lighting);
+                for (int i = reserved_layers; i < reserved_layers + static_layers; i++)
+                {
+                    if (vtx[i] != null && vtx[i].Type == VertexBufferData.BufferType.Skydome)
+                    {
+                        vtx[i].DrawAllElements(PrimitiveType.Triangles, BufferPointerFlags.Normal);
+                    }
+                }
+                GL.Disable(EnableCap.Lighting);
+            }
+
+            //scenery
+            if (file.Data.Type == TwinsFile.FileType.RM2 && show_scenery)
+            {
+                GL.Enable(EnableCap.Lighting);
+                for (int i = reserved_layers; i < reserved_layers + static_layers; i++)
+                {
+                    if (vtx[i] != null && vtx[i].Type == VertexBufferData.BufferType.Scenery)
+                    {
+                        vtx[i].DrawAllElements(PrimitiveType.Triangles, BufferPointerFlags.Normal);
+                    }
+                }
+                GL.Disable(EnableCap.Lighting);
+            }
+
+            //chunk link scenery
+            if (file.Data.Type == TwinsFile.FileType.RM2 && show_linked_chunks && show_scenery)
+            {
+                GL.Enable(EnableCap.Lighting);
+                for (int i = reserved_layers; i < reserved_layers + static_layers; i++)
+                {
+                    if (vtx[i] != null && vtx[i].Type == VertexBufferData.BufferType.ExtraScenery)
                     {
                         vtx[i].DrawAllElements(PrimitiveType.Triangles, BufferPointerFlags.Normal);
                     }
@@ -107,11 +392,29 @@ namespace TwinsaityEditor
             }
 
             //instances
-            vtx[1].DrawMulti(PrimitiveType.LineStrip, BufferPointerFlags.Default);
+            if (show_inst)
+            {
+                vtx[1].DrawMulti(PrimitiveType.LineStrip, BufferPointerFlags.Default);
+            }
 
             //positions + ai positions
-            vtx[3].DrawMulti(PrimitiveType.LineLoop, BufferPointerFlags.Default);
-            vtx[4].DrawMulti(PrimitiveType.LineLoop, BufferPointerFlags.Default);
+            if (show_pos)
+            {
+                vtx[3].DrawMulti(PrimitiveType.LineLoop, BufferPointerFlags.Default);
+                vtx[4].DrawMulti(PrimitiveType.LineLoop, BufferPointerFlags.Default);
+            }
+
+            //particle positions
+            if (show_pos && vtx[5].VtxOffs != null && vtx[5].VtxOffs.Length > 0)
+            {
+                vtx[5].DrawMulti(PrimitiveType.LineLoop, BufferPointerFlags.Default);
+            }
+
+            //lights
+            if (show_pos && vtx[6].VtxOffs != null && vtx[6].VtxOffs.Length > 0)
+            {
+                vtx[6].DrawMulti(PrimitiveType.LineLoop, BufferPointerFlags.Default);
+            }
 
             GL.BindBuffer(BufferTarget.ArrayBuffer, 0);
 
@@ -122,129 +425,135 @@ namespace TwinsaityEditor
                 if (file.Data.ContainsItem(i))
                 {
                     Color cur_color;
-                    if (file.Data.GetItem<TwinsSection>(i).ContainsItem(1)) //aipositions
+                    if (show_pos)
                     {
-                        foreach (AIPosition pos in file.Data.GetItem<TwinsSection>(i).GetItem<TwinsSection>(1).Records)
+                        if (file.Data.GetItem<TwinsSection>(i).ContainsItem(1)) //aipositions
                         {
-                            if (file.SelectedItem != pos)
+                            foreach (AIPosition pos in file.Data.GetItem<TwinsSection>(i).GetItem<TwinsSection>(1).Records)
                             {
-                                GL.PointSize(5);
-                                cur_color = colors[colors.Length - i * 2 - 2];
-                            }
-                            else
-                            {
-                                GL.PointSize(10);
-                                cur_color = Color.White;
-                            }
-                            GL.Color3(cur_color);
-                            GL.Begin(PrimitiveType.Points);
-                            GL.Vertex3(-pos.Pos.X, pos.Pos.Y, pos.Pos.Z);
-                            GL.End();
-                            RenderString3D(pos.ID.ToString(), cur_color, -pos.Pos.X, pos.Pos.Y, pos.Pos.Z, ref identity_mat, pos.Pos.W / 3);
-                        }
-                    }
-
-                    if (file.Data.GetItem<TwinsSection>(i).ContainsItem(2)) //aipaths
-                    {
-                        foreach (AIPath pth in file.Data.GetItem<TwinsSection>(i).GetItem<TwinsSection>(2).Records)
-                        {
-                            AIPosition pth_begin = file.GetAIPos(i, pth.Arg[0]);
-                            AIPosition pth_end = file.GetAIPos(i, pth.Arg[1]);
-
-                            if (file.SelectedItem != pth)
-                            {
-                                GL.PointSize(5);
-                                GL.LineWidth(1);
-                                cur_color = colors[colors.Length - i * 2 - 2];
-                            }
-                            else
-                            {
-                                GL.PointSize(10);
-                                GL.LineWidth(2);
-                                cur_color = Color.White;
-                            }
-                            RenderString3D(pth.ID.ToString(), cur_color, -(pth_begin.Pos.X + pth_end.Pos.X) / 2, (pth_begin.Pos.Y + pth_end.Pos.Y) / 2, (pth_begin.Pos.Z + pth_end.Pos.Z) / 2, ref identity_mat, 0.5F);
-                            GL.Color3(cur_color);
-                            GL.Begin(PrimitiveType.Lines);
-                            GL.Vertex3(-pth_begin.Pos.X, pth_begin.Pos.Y, pth_begin.Pos.Z);
-                            GL.Vertex3(-pth_end.Pos.X, pth_end.Pos.Y, pth_end.Pos.Z);
-                            GL.End();
-                        }
-                    }
-
-                    if (file.Data.GetItem<TwinsSection>(i).ContainsItem(3)) //positions
-                    {
-                        foreach (Position pos in file.Data.GetItem<TwinsSection>(i).GetItem<TwinsSection>(3).Records)
-                        {
-                            if (file.SelectedItem != pos)
-                            {
-                                GL.PointSize(5);
-                                cur_color = colors[colors.Length - i * 2 - 1];
-                            }
-                            else
-                            {
-                                GL.PointSize(10);
-                                cur_color = Color.White;
-                            }
-                            GL.Color3(cur_color);
-                            GL.Begin(PrimitiveType.Points);
-                            GL.Vertex3(-pos.Pos.X, pos.Pos.Y, pos.Pos.Z);
-                            GL.End();
-                            RenderString3D(pos.ID.ToString(), cur_color, -pos.Pos.X, pos.Pos.Y, pos.Pos.Z, ref identity_mat, 0.5F);
-                        }
-                    }
-
-                    if (file.Data.GetItem<TwinsSection>(i).ContainsItem(4)) //paths
-                    {
-                        foreach (Path pth in file.Data.GetItem<TwinsSection>(i).GetItem<TwinsSection>(4).Records)
-                        {
-                            for (int k = 0; k < pth.Positions.Count; ++k)
-                            {
-                                DrawAxes(-pth.Positions[k].X, pth.Positions[k].Y, pth.Positions[k].Z, 0.5f);
-                                if (file.SelectedItem != pth || file.SelectedItemArg != k)
-                                    cur_color = colors[colors.Length - i * 2 - 1];
+                                if (file.SelectedItem != pos)
+                                {
+                                    GL.PointSize(5);
+                                    cur_color = colors[colors.Length - i * 2 - 2];
+                                }
                                 else
+                                {
+                                    GL.PointSize(10);
                                     cur_color = Color.White;
-                                RenderString3D($"{pth.ID.ToString()}:{k}", cur_color, -pth.Positions[k].X, pth.Positions[k].Y, pth.Positions[k].Z, ref identity_mat, 0.5F);
+                                }
+                                GL.Color3(cur_color);
+                                GL.Begin(PrimitiveType.Points);
+                                GL.Vertex3(-pos.Pos.X, pos.Pos.Y, pos.Pos.Z);
+                                GL.End();
+                                RenderString3D(pos.ID.ToString(), cur_color, -pos.Pos.X, pos.Pos.Y, pos.Pos.Z, ref identity_mat, pos.Pos.W / 3);
                             }
-                            if (file.SelectedItem != pth)
+                        }
+
+                        if (file.Data.GetItem<TwinsSection>(i).ContainsItem(2)) //aipaths
+                        {
+                            foreach (AIPath pth in file.Data.GetItem<TwinsSection>(i).GetItem<TwinsSection>(2).Records)
                             {
-                                GL.PointSize(5);
-                                GL.LineWidth(1);
-                            }
-                            else
-                            {
-                                GL.PointSize(10);
-                                GL.LineWidth(2);
-                            }
-                            GL.Begin(PrimitiveType.LineStrip);
-                            for (int k = 0; k < pth.Positions.Count; ++k)
-                            {
-                                if (file.SelectedItem != pth || file.SelectedItemArg != k)
-                                    GL.Color3(colors[colors.Length - i * 2 - 1]);
+                                AIPosition pth_begin = file.GetAIPos(i, pth.Arg[0]);
+                                AIPosition pth_end = file.GetAIPos(i, pth.Arg[1]);
+
+                                if (file.SelectedItem != pth)
+                                {
+                                    GL.PointSize(5);
+                                    GL.LineWidth(1);
+                                    cur_color = colors[colors.Length - i * 2 - 2];
+                                }
                                 else
-                                    GL.Color3(Color.White);
-                                GL.Vertex3(-pth.Positions[k].X, pth.Positions[k].Y, pth.Positions[k].Z);
+                                {
+                                    GL.PointSize(10);
+                                    GL.LineWidth(2);
+                                    cur_color = Color.White;
+                                }
+                                RenderString3D(pth.ID.ToString(), cur_color, -(pth_begin.Pos.X + pth_end.Pos.X) / 2, (pth_begin.Pos.Y + pth_end.Pos.Y) / 2, (pth_begin.Pos.Z + pth_end.Pos.Z) / 2, ref identity_mat, 0.5F);
+                                GL.Color3(cur_color);
+                                GL.Begin(PrimitiveType.Lines);
+                                GL.Vertex3(-pth_begin.Pos.X, pth_begin.Pos.Y, pth_begin.Pos.Z);
+                                GL.Vertex3(-pth_end.Pos.X, pth_end.Pos.Y, pth_end.Pos.Z);
+                                GL.End();
                             }
-                            GL.End();
+                        }
+
+                        if (file.Data.GetItem<TwinsSection>(i).ContainsItem(3)) //positions
+                        {
+                            foreach (Position pos in file.Data.GetItem<TwinsSection>(i).GetItem<TwinsSection>(3).Records)
+                            {
+                                if (file.SelectedItem != pos)
+                                {
+                                    GL.PointSize(5);
+                                    cur_color = colors[colors.Length - i * 2 - 1];
+                                }
+                                else
+                                {
+                                    GL.PointSize(10);
+                                    cur_color = Color.White;
+                                }
+                                GL.Color3(cur_color);
+                                GL.Begin(PrimitiveType.Points);
+                                GL.Vertex3(-pos.Pos.X, pos.Pos.Y, pos.Pos.Z);
+                                GL.End();
+                                RenderString3D(pos.ID.ToString(), cur_color, -pos.Pos.X, pos.Pos.Y, pos.Pos.Z, ref identity_mat, 0.5F);
+                            }
+                        }
+
+                        if (file.Data.GetItem<TwinsSection>(i).ContainsItem(4)) //paths
+                        {
+                            foreach (Path pth in file.Data.GetItem<TwinsSection>(i).GetItem<TwinsSection>(4).Records)
+                            {
+                                for (int k = 0; k < pth.Positions.Count; ++k)
+                                {
+                                    DrawAxes(-pth.Positions[k].X, pth.Positions[k].Y, pth.Positions[k].Z, 0.5f);
+                                    if (file.SelectedItem != pth || file.SelectedItemArg != k)
+                                        cur_color = colors[colors.Length - i * 2 - 1];
+                                    else
+                                        cur_color = Color.White;
+                                    RenderString3D($"{pth.ID.ToString()}:{k}", cur_color, -pth.Positions[k].X, pth.Positions[k].Y, pth.Positions[k].Z, ref identity_mat, 0.5F);
+                                }
+                                if (file.SelectedItem != pth)
+                                {
+                                    GL.PointSize(5);
+                                    GL.LineWidth(1);
+                                }
+                                else
+                                {
+                                    GL.PointSize(10);
+                                    GL.LineWidth(2);
+                                }
+                                GL.Begin(PrimitiveType.LineStrip);
+                                for (int k = 0; k < pth.Positions.Count; ++k)
+                                {
+                                    if (file.SelectedItem != pth || file.SelectedItemArg != k)
+                                        GL.Color3(colors[colors.Length - i * 2 - 1]);
+                                    else
+                                        GL.Color3(Color.White);
+                                    GL.Vertex3(-pth.Positions[k].X, pth.Positions[k].Y, pth.Positions[k].Z);
+                                }
+                                GL.End();
+                            }
                         }
                     }
 
-                    if (file.Data.GetItem<TwinsSection>(i).ContainsItem(6)) //instances
+                    if (show_inst)
                     {
-                        if (file.Data.Type != TwinsFile.FileType.DemoRM2)
+                        if (file.Data.GetItem<TwinsSection>(i).ContainsItem(6)) //instances
                         {
-                            foreach (Instance ins in file.Data.GetItem<TwinsSection>(i).GetItem<TwinsSection>(6).Records)
+                            if (file.Data.Type != TwinsFile.FileType.DemoRM2)
                             {
-                                Matrix3 rot_ins = Matrix3.Identity;
-                                rot_ins *= Matrix3.CreateRotationX(ins.RotX / (float)(ushort.MaxValue + 1) * MathHelper.TwoPi);
-                                rot_ins *= Matrix3.CreateRotationY(-ins.RotY / (float)(ushort.MaxValue + 1) * MathHelper.TwoPi);
-                                rot_ins *= Matrix3.CreateRotationZ(-ins.RotZ / (float)(ushort.MaxValue + 1) * MathHelper.TwoPi);
-                                if (file.SelectedItem == ins)
-                                    cur_color = Color.White;
-                                else
-                                    cur_color = colors[colors.Length - i * 2 - 1];
-                                RenderString3D(ins.ID.ToString(), cur_color, -ins.Pos.X, ins.Pos.Y, ins.Pos.Z, ref rot_ins);
+                                foreach (Instance ins in file.Data.GetItem<TwinsSection>(i).GetItem<TwinsSection>(6).Records)
+                                {
+                                    Matrix3 rot_ins = Matrix3.Identity;
+                                    rot_ins *= Matrix3.CreateRotationX(ins.RotX / (float)(ushort.MaxValue + 1) * MathHelper.TwoPi);
+                                    rot_ins *= Matrix3.CreateRotationY(-ins.RotY / (float)(ushort.MaxValue + 1) * MathHelper.TwoPi);
+                                    rot_ins *= Matrix3.CreateRotationZ(-ins.RotZ / (float)(ushort.MaxValue + 1) * MathHelper.TwoPi);
+                                    if (file.SelectedItem == ins)
+                                        cur_color = Color.White;
+                                    else
+                                        cur_color = colors[colors.Length - i * 2 - 1];
+                                    RenderString3D(ins.ID.ToString(), cur_color, -ins.Pos.X, ins.Pos.Y, ins.Pos.Z, ref rot_ins);
+                                }
                             }
                         }
                     }
@@ -406,6 +715,86 @@ namespace TwinsaityEditor
                                 Matrix3 rot_mat = Matrix3.CreateFromQuaternion(quat);
                                 RenderString3D(cam.ID.ToString(), cur_color, -cam.TriggerPos.X, cam.TriggerPos.Y, cam.TriggerPos.Z, ref rot_mat);
                             }
+                        }
+                    }
+                }
+            }
+
+            if (show_pos)
+            {
+                if (file.Data.GetItem<ParticleData>(8).Size > 12) //particle positions
+                {
+                    ParticleData partData = file.Data.GetItem<ParticleData>(8);
+                    if (partData.ParticleInstanceCount > 0)
+                    {
+                        for (int p = 0; p < partData.ParticleInstanceCount; p++)
+                        {
+                            Matrix3 rot_ins = Matrix3.Identity;
+                            rot_ins *= Matrix3.CreateRotationX(partData.ParticleInstances[p].Rot_X / (float)(ushort.MaxValue + 1) * MathHelper.TwoPi);
+                            rot_ins *= Matrix3.CreateRotationY(-partData.ParticleInstances[p].Rot_Y / (float)(ushort.MaxValue + 1) * MathHelper.TwoPi);
+                            rot_ins *= Matrix3.CreateRotationZ(-partData.ParticleInstances[p].Rot_Z / (float)(ushort.MaxValue + 1) * MathHelper.TwoPi);
+                            GL.PointSize(5);
+                            GL.Color3(Color.Pink);
+                            GL.Begin(PrimitiveType.Points);
+                            GL.Vertex3(-partData.ParticleInstances[p].Position.X, partData.ParticleInstances[p].Position.Y, partData.ParticleInstances[p].Position.Z);
+                            GL.End();
+                            RenderString3D(p.ToString(), Color.Pink, -partData.ParticleInstances[p].Position.X, partData.ParticleInstances[p].Position.Y, partData.ParticleInstances[p].Position.Z, ref rot_ins, 0.5F);
+                        }
+                    }
+                }
+                if (file.DataAux != null) // lights
+                {
+                    SceneryData scenData = file.DataAux.GetItem<SceneryData>(0);
+                    if (scenData.LightsAmbient.Count > 0)
+                    {
+                        for (int p = 0; p < scenData.LightsAmbient.Count; p++)
+                        {
+                            Matrix3 rot_ins = Matrix3.Identity;
+                            GL.PointSize(5);
+                            GL.Color3(Color.White);
+                            GL.Begin(PrimitiveType.Points);
+                            GL.Vertex3(-scenData.LightsAmbient[p].Position.X, scenData.LightsAmbient[p].Position.Y, scenData.LightsAmbient[p].Position.Z);
+                            GL.End();
+                            RenderString3D(p.ToString(), Color.White, -scenData.LightsAmbient[p].Position.X, scenData.LightsAmbient[p].Position.Y, scenData.LightsAmbient[p].Position.Z, ref rot_ins, 0.5F);
+                        }
+                    }
+                    if (scenData.LightsDirectional.Count > 0)
+                    {
+                        for (int p = 0; p < scenData.LightsDirectional.Count; p++)
+                        {
+                            Matrix3 rot_ins = Matrix3.Identity;
+                            GL.PointSize(5);
+                            GL.Color3(Color.LightYellow);
+                            GL.Begin(PrimitiveType.Points);
+                            GL.Vertex3(-scenData.LightsDirectional[p].Position.X, scenData.LightsDirectional[p].Position.Y, scenData.LightsDirectional[p].Position.Z);
+                            GL.End();
+                            RenderString3D(p.ToString(), Color.LightYellow, -scenData.LightsDirectional[p].Position.X, scenData.LightsDirectional[p].Position.Y, scenData.LightsDirectional[p].Position.Z, ref rot_ins, 0.5F);
+                        }
+                    }
+                    if (scenData.LightsPoint.Count > 0)
+                    {
+                        for (int p = 0; p < scenData.LightsPoint.Count; p++)
+                        {
+                            Matrix3 rot_ins = Matrix3.Identity;
+                            GL.PointSize(5);
+                            GL.Color3(Color.Yellow);
+                            GL.Begin(PrimitiveType.Points);
+                            GL.Vertex3(-scenData.LightsPoint[p].Position.X, scenData.LightsPoint[p].Position.Y, scenData.LightsPoint[p].Position.Z);
+                            GL.End();
+                            RenderString3D(p.ToString(), Color.Yellow, -scenData.LightsPoint[p].Position.X, scenData.LightsPoint[p].Position.Y, scenData.LightsPoint[p].Position.Z, ref rot_ins, 0.5F);
+                        }
+                    }
+                    if (scenData.LightsNegative.Count > 0)
+                    {
+                        for (int p = 0; p < scenData.LightsNegative.Count; p++)
+                        {
+                            Matrix3 rot_ins = Matrix3.Identity;
+                            GL.PointSize(5);
+                            GL.Color3(Color.LightGoldenrodYellow);
+                            GL.Begin(PrimitiveType.Points);
+                            GL.Vertex3(-scenData.LightsNegative[p].Position.X, scenData.LightsNegative[p].Position.Y, scenData.LightsNegative[p].Position.Z);
+                            GL.End();
+                            RenderString3D(p.ToString(), Color.LightYellow, -scenData.LightsNegative[p].Position.X, scenData.LightsNegative[p].Position.Y, scenData.LightsNegative[p].Position.Z, ref rot_ins, 0.5F);
                         }
                     }
                 }
@@ -589,78 +978,129 @@ namespace TwinsaityEditor
             base.OnKeyDown(e);
             switch (e.KeyCode)
             {
-                case Keys.C:
-                    show_col_nodes = !show_col_nodes;
+                case Keys.Oemtilde:
+                    show_scenery = !show_scenery;
                     break;
-                case Keys.L:
-                    sm2_links = !sm2_links;
+                case Keys.D1:
+                    show_col = !show_col;
                     break;
-                case Keys.T:
-                    show_triggers = !show_triggers;
+                case Keys.D2:
+                    show_hurtzones = !show_hurtzones;
                     break;
-                case Keys.X:
-                    wire_col = !wire_col;
+                case Keys.D3:
+                    show_invis = !show_invis;
                     break;
-                case Keys.V:
+                case Keys.D4:
                     obj_models = !obj_models;
                     break;
-                case Keys.Y:
+                case Keys.D5:
+                    sm2_links = !sm2_links;
+                    break;
+                case Keys.D6:
+                    show_triggers = !show_triggers;
+                    break;
+                case Keys.D7:
                     show_cams = !show_cams;
+                    break;
+                case Keys.D8:
+                    show_inst = !show_inst;
+                    break;
+                case Keys.D9:
+                    show_pos = !show_pos;
+                    break;
+                case Keys.D0:
+                    show_skydome = !show_skydome;
+                    break;
+                case Keys.OemMinus:
+                    show_linked_chunks = !show_linked_chunks;
+                    break;
+                case Keys.Oemplus:
+                    show_hud = !show_hud;
+                    break;
+                case Keys.OemOpenBrackets:
+                    wire_col = !wire_col;
+                    break;
+                case Keys.OemCloseBrackets:
+                    show_col_nodes = !show_col_nodes;
                     break;
             }
         }
 
-        public void LoadColTree()
+        public void LoadColTree(FileController fcont, int layer, bool islinked, Matrix4 ChunkMatrix, int LinkID)
         {
-            ColData data = file.Data.GetItem<ColData>(9);
+            ColData data = fcont.Data.GetItem<ColData>(9);
             List<Vertex> vertices = new List<Vertex>(data.Vertices.Count);
-            vtx[0].VtxInd = new uint[data.Tris.Count * 3];
+            vtx[reserved_layers + static_layers] = new VertexBufferData();
+            vtx[reserved_layers + static_layers].VtxInd = new uint[data.Tris.Count * 3];
+            if (islinked)
+            {
+                vtx[reserved_layers + static_layers].Type = VertexBufferData.BufferType.ExtraCollision;
+                vtx[reserved_layers + static_layers].LinkID = LinkID;
+            }
+            else
+            {
+                vtx[reserved_layers + static_layers].Type = VertexBufferData.BufferType.Collision;
+            }
+            vtx[reserved_layers + static_layers].LayerID = layer;
+
             for (int i = 0; i < data.Vertices.Count; ++i)
             {
-                var v = data.Vertices[i].ToVec3();
+                Vector4 v = data.Vertices[i].ToVec4();
                 v.X = -v.X;
-                vertices.Add(new Vertex(v));
+
+                if (islinked)
+                {
+                    v *= ChunkMatrix;
+                }
+
+                Vector3 v_3 = new Vector3(v.X,v.Y,v.Z);
+
+                vertices.Add(new Vertex(v_3));
             }
             for (int i = 0; i < data.Tris.Count; ++i)
             {
-                uint col = Vertex.ColorToABGR(colors[data.Tris[i].Surface % colors.Length]);
-                int v1 = data.Tris[i].Vert1;
-                if (vertices[v1].Col != 0 && vertices[v1].Col != col)
+                if (data.Tris[i].Surface == layer)
                 {
-                    vertices.Add(vertices[v1]);
-                    v1 = vertices.Count-1;
+                    uint col = Vertex.ColorToABGR(colors[data.Tris[i].Surface % colors.Length]);
+                    int v1 = data.Tris[i].Vert1;
+                    if (vertices[v1].Col != 0 && vertices[v1].Col != col)
+                    {
+                        vertices.Add(vertices[v1]);
+                        v1 = vertices.Count - 1;
+                    }
+                    int v2 = data.Tris[i].Vert2;
+                    if (vertices[v2].Col != 0 && vertices[v2].Col != col)
+                    {
+                        vertices.Add(vertices[v2]);
+                        v2 = vertices.Count - 1;
+                    }
+                    int v3 = data.Tris[i].Vert3;
+                    if (vertices[v3].Col != 0 && vertices[v3].Col != col)
+                    {
+                        vertices.Add(vertices[v3]);
+                        v3 = vertices.Count - 1;
+                    }
+                    vtx[reserved_layers + static_layers].VtxInd[i * 3 + 0] = (uint)v1;
+                    vtx[reserved_layers + static_layers].VtxInd[i * 3 + 1] = (uint)v2;
+                    vtx[reserved_layers + static_layers].VtxInd[i * 3 + 2] = (uint)v3;
+                    Vector3 normal = VectorFuncs.CalcNormal(vertices[v1].Pos, vertices[v2].Pos, vertices[v3].Pos);
+                    var v = vertices[v1];
+                    v.Nor += normal;
+                    v.Col = col;
+                    vertices[v1] = v;
+                    v = vertices[v2];
+                    v.Nor += normal;
+                    v.Col = col;
+                    vertices[v2] = v;
+                    v = vertices[v3];
+                    v.Nor += normal;
+                    v.Col = col;
+                    vertices[v3] = v;
                 }
-                int v2 = data.Tris[i].Vert2;
-                if (vertices[v2].Col != 0 && vertices[v2].Col != col)
-                {
-                    vertices.Add(vertices[v2]);
-                    v2 = vertices.Count-1;
-                }
-                int v3 = data.Tris[i].Vert3;
-                if (vertices[v3].Col != 0 && vertices[v3].Col != col)
-                {
-                    vertices.Add(vertices[v3]);
-                    v3 = vertices.Count-1;
-                }
-                vtx[0].VtxInd[i * 3 + 0] = (uint)v1;
-                vtx[0].VtxInd[i * 3 + 1] = (uint)v2;
-                vtx[0].VtxInd[i * 3 + 2] = (uint)v3;
-                Vector3 normal = VectorFuncs.CalcNormal(vertices[v1].Pos, vertices[v2].Pos, vertices[v3].Pos);
-                var v = vertices[v1];
-                v.Nor += normal;
-                v.Col = col;
-                vertices[v1] = v;
-                v = vertices[v2];
-                v.Nor += normal;
-                v.Col = col;
-                vertices[v2] = v;
-                v = vertices[v3];
-                v.Nor += normal;
-                v.Col = col;
-                vertices[v3] = v;
             }
-            vtx[0].Vtx = vertices.ToArray();
-            UpdateVBO(0);
+            vtx[reserved_layers + static_layers].Vtx = vertices.ToArray();
+            UpdateVBO(reserved_layers + static_layers);
+            static_layers++;
         }
 
         public void LoadInstances()
@@ -806,7 +1246,7 @@ namespace TwinsaityEditor
                                         }
                                     }
                                 }
-
+                                
                                 if (TargetGI != 65535)
                                 {
                                     foreach (GraphicsInfo GI in targetFile.Data.GetItem<TwinsSection>(10).GetItem<TwinsSection>(3).Records)
@@ -826,11 +1266,11 @@ namespace TwinsaityEditor
                                                         tempRot.M11 = -GI.Type3[GI.ModelIDs[gi_model].ID].Matrix[0].X;
                                                         tempRot.M12 = -GI.Type3[GI.ModelIDs[gi_model].ID].Matrix[1].X;
                                                         tempRot.M13 = -GI.Type3[GI.ModelIDs[gi_model].ID].Matrix[2].X;
-
+                                                        
                                                         tempRot.M21 = GI.Type3[GI.ModelIDs[gi_model].ID].Matrix[0].Y;
                                                         tempRot.M22 = GI.Type3[GI.ModelIDs[gi_model].ID].Matrix[1].Y;
                                                         tempRot.M23 = GI.Type3[GI.ModelIDs[gi_model].ID].Matrix[2].Y;
-
+                                                        
                                                         tempRot.M31 = GI.Type3[GI.ModelIDs[gi_model].ID].Matrix[0].Z;
                                                         tempRot.M32 = GI.Type3[GI.ModelIDs[gi_model].ID].Matrix[1].Z;
                                                         tempRot.M33 = GI.Type3[GI.ModelIDs[gi_model].ID].Matrix[2].Z;
@@ -884,29 +1324,58 @@ namespace TwinsaityEditor
                                                 for (int v = 0; v < modelCont.Vertices.Length; v++)
                                                 {
                                                     vbuffer[v] = modelCont.Vertices[v];
-
                                                     Vector4 targetPos = new Vector4(modelCont.Vertices[v].Pos.X, modelCont.Vertices[v].Pos.Y, modelCont.Vertices[v].Pos.Z, 1);
 
                                                     targetPos *= LocalRot;
-                                                    targetPos *= rot_ins_4;
+
+                                                    bool rotationOverride = false;
+                                                    if (ins.ObjectID == (ushort)DefaultEnums.ObjectID.ICICLE)
+                                                    {
+                                                        if (ins.UnkI323[0] == 1)
+                                                        {
+                                                            Matrix4 rot_ins_fix = Matrix4.Identity;
+                                                            rot_ins_fix *= Matrix4.CreateRotationZ((32768) / (float)(ushort.MaxValue + 1) * MathHelper.TwoPi);
+                                                            targetPos *= rot_ins_fix;
+                                                            rotationOverride = true;
+                                                        }
+                                                    }
+
+                                                    if (!rotationOverride)
+                                                    {
+                                                        targetPos *= rot_ins_4;
+                                                    }
+                                                    
                                                     targetPos += pos_ins_4;
                                                     modelCont.Vertices[v].Pos = new Vector3(targetPos.X, targetPos.Y, targetPos.Z);
-
+                                                    if (ins.ObjectID == (ushort)DefaultEnums.ObjectID.TNTCRATE)
+                                                    {
+                                                        modelCont.Vertices[v].Col = Vertex.ColorToABGR(Color.Red);
+                                                    }
+                                                    else if (ins.ObjectID == (ushort)DefaultEnums.ObjectID.NITROCRATE)
+                                                    {
+                                                        modelCont.Vertices[v].Col = Vertex.ColorToABGR(Color.Green);
+                                                    }
+                                                    else if (WoodCrates.Contains((DefaultEnums.ObjectID)ins.ObjectID))
+                                                    {
+                                                        modelCont.Vertices[v].Col = Vertex.ColorToABGR(Color.SandyBrown);
+                                                    }
                                                 }
-                                                vtx[5 + cur_instance] = new VertexBufferData();
-                                                vtx[5 + cur_instance].Vtx = modelCont.Vertices;
-                                                vtx[5 + cur_instance].VtxInd = modelCont.Indices;
+                                                vtx[reserved_layers + static_layers + cur_instance] = new VertexBufferData();
+                                                vtx[reserved_layers + static_layers + cur_instance].Vtx = modelCont.Vertices;
+                                                vtx[reserved_layers + static_layers + cur_instance].VtxInd = modelCont.Indices;
+                                                vtx[reserved_layers + static_layers + cur_instance].Type = VertexBufferData.BufferType.Object;
                                                 modelCont.Vertices = vbuffer;
-                                                UpdateVBO(5 + cur_instance);
+                                                UpdateVBO(reserved_layers + static_layers + cur_instance);
                                             }
                                             else
                                             {
-                                                vtx[5 + cur_instance] = null;
+                                                vtx[reserved_layers + static_layers + cur_instance] = null;
                                             }
                                             cur_instance++;
                                         }
                                     }
                                 }
+                                
                             }
                         }
                     }
@@ -963,6 +1432,439 @@ namespace TwinsaityEditor
             }
             zFar = Math.Max(zFar, Math.Max(max_x - min_x, Math.Max(max_y - min_y, max_z - min_z)));
             UpdateVBO(2);
+        }
+
+        public void LoadSkydome()
+        {
+            float min_x = float.MaxValue, min_y = float.MaxValue, min_z = float.MaxValue, max_x = float.MinValue, max_y = float.MinValue, max_z = float.MinValue;
+            SceneryDataController scenery_sec = file.AuxCont.GetItem<SceneryDataController>(0);
+            SectionController skydome_sec = file.AuxCont.GetItem<SectionController>(6).GetItem<SectionController>(8);
+            SectionController mesh_sec = file.AuxCont.GetItem<SectionController>(6).GetItem<SectionController>(2);
+            SectionController model_sec = file.AuxCont.GetItem<SectionController>(6).GetItem<SectionController>(6);
+            SectionController special_sec = file.AuxCont.GetItem<SectionController>(6).GetItem<SectionController>(7);
+            if (scenery_sec.Data.SkydomeID != 0 && skydome_sec.Data.ContainsItem(scenery_sec.Data.SkydomeID))
+            {
+                SkydomeController sky = skydome_sec.GetItem<SkydomeController>(scenery_sec.Data.SkydomeID);
+                for (int i = 0; i < sky.Data.ModelIDs.Length; ++i)
+                {
+                    if (special_sec.Data.ContainsItem(sky.Data.ModelIDs[i]))
+                        continue;
+                    MeshController mesh = mesh_sec.GetItem<MeshController>(model_sec.GetItem<ModelController>(sky.Data.ModelIDs[i]).Data.MeshID);
+                    mesh.LoadMeshData();
+
+                    Vertex[] vbuffer = new Vertex[mesh.Vertices.Length];
+
+                    for (int v = 0; v < mesh.Vertices.Length; v++)
+                    {
+                        vbuffer[v] = mesh.Vertices[v];
+                        mesh.Vertices[v].Pos = new Vector3(mesh.Vertices[v].Pos.X, mesh.Vertices[v].Pos.Y, mesh.Vertices[v].Pos.Z);
+                        mesh.Vertices[v].Pos *= 100f; // skydome scale, the value is just a guess
+                    }
+
+                    foreach (var v in mesh.Vertices)
+                    {
+                        min_x = Math.Min(min_x, v.Pos.X);
+                        min_y = Math.Min(min_y, v.Pos.Y);
+                        min_z = Math.Min(min_z, v.Pos.Z);
+                        max_x = Math.Max(max_x, v.Pos.X);
+                        max_y = Math.Max(max_y, v.Pos.Y);
+                        max_z = Math.Max(max_z, v.Pos.Z);
+                    }
+                    vtx[reserved_layers + static_layers] = new VertexBufferData();
+                    vtx[reserved_layers + static_layers].Vtx = mesh.Vertices;
+                    vtx[reserved_layers + static_layers].VtxInd = mesh.Indices;
+                    vtx[reserved_layers + static_layers].Type = VertexBufferData.BufferType.Skydome;
+                    mesh.Vertices = vbuffer;
+                    UpdateVBO(reserved_layers + static_layers);
+                    static_layers++;
+                }
+                zFar = Math.Max(zFar, Math.Max(max_x - min_x, Math.Max(max_y - min_y, max_z - min_z)));
+            }
+        }
+
+        public void LoadScenery(FileController file, bool isLinkedScenery, Matrix4 ChunkMatrix, int LinkID, bool isUpdate)
+        {
+            float min_x = float.MaxValue, min_y = float.MaxValue, min_z = float.MaxValue, max_x = float.MinValue, max_y = float.MinValue, max_z = float.MinValue;
+            SceneryDataController scenery_sec = file.GetItem<SceneryDataController>(0);
+            SectionController tex_sec = file.GetItem<SectionController>(6).GetItem<SectionController>(0);
+            SectionController mat_sec = file.GetItem<SectionController>(6).GetItem<SectionController>(1);
+            SectionController mesh_sec = file.GetItem<SectionController>(6).GetItem<SectionController>(2);
+            SectionController model_sec = file.GetItem<SectionController>(6).GetItem<SectionController>(6);
+            SectionController special_sec = file.GetItem<SectionController>(6).GetItem<SectionController>(7);
+
+            if (scenery_sec.Data.sceneryModels.Count <= 0)
+            {
+                return;
+            }
+            for (int s = 0; s < scenery_sec.Data.sceneryModels.Count; s++)
+            {
+                for (int m = 0; m < scenery_sec.Data.sceneryModels[s].Models.Count; m++)
+                {
+                    MeshController mesh;
+                    MaterialController[] mat;
+                    TextureController[] tex;
+                    uint modelID = 0;
+                    if (!scenery_sec.Data.sceneryModels[s].Models[m].isSpecial)
+                    {
+                        modelID = scenery_sec.Data.sceneryModels[s].Models[m].ModelID;
+                    }
+                    else
+                    {
+                        uint LODcount = special_sec.Data.GetItem<SpecialModel>(scenery_sec.Data.sceneryModels[s].Models[m].ModelID).K_Count;
+                        int targetLOD = 3;
+                        if (LODcount > 3)
+                        {
+                            targetLOD = 0;
+                        }
+                        else if (LODcount > 2)
+                        {
+                            targetLOD = 1;
+                        }
+                        else if (LODcount > 1)
+                        {
+                            targetLOD = 2;
+                        }
+                        modelID = special_sec.Data.GetItem<SpecialModel>(scenery_sec.Data.sceneryModels[s].Models[m].ModelID).LODModelIDs[targetLOD];
+                    }
+                    mesh = mesh_sec.GetItem<MeshController>(model_sec.GetItem<ModelController>(modelID).Data.MeshID);
+
+                    int matCount = model_sec.GetItem<ModelController>(modelID).Data.MaterialIDs.Length;
+                    mat = new MaterialController[matCount];
+                    tex = new TextureController[matCount];
+                    
+                    for (int t = 0; t < matCount; t++)
+                    {
+                        mat[t] = mat_sec.GetItem<MaterialController>(model_sec.GetItem<ModelController>(modelID).Data.MaterialIDs[t]);
+                        if (mat_sec.GetItem<MaterialController>(mat[t].Data.ID).Data.Tex != 0)
+                        {
+                            tex[t] = tex_sec.GetItem<TextureController>(mat_sec.GetItem<MaterialController>(mat[t].Data.ID).Data.Tex);
+                        }
+                        else
+                        {
+                            tex[t] = null;
+                        } 
+                    }
+                    //textures loaded into tex[]... but what next?
+
+                    mesh.LoadMeshData();
+
+                    Matrix4 modelMatrix = Matrix4.Identity;
+
+                    // closest: -M11, -M21, -M31, -X
+
+                    // Rotation
+                    modelMatrix.M11 = -scenery_sec.Data.sceneryModels[s].Models[m].ModelMatrix[0].X;
+                    modelMatrix.M12 = scenery_sec.Data.sceneryModels[s].Models[m].ModelMatrix[1].X;
+                    modelMatrix.M13 = scenery_sec.Data.sceneryModels[s].Models[m].ModelMatrix[2].X;
+
+                    modelMatrix.M21 = -scenery_sec.Data.sceneryModels[s].Models[m].ModelMatrix[0].Y;
+                    modelMatrix.M22 = scenery_sec.Data.sceneryModels[s].Models[m].ModelMatrix[1].Y;
+                    modelMatrix.M23 = scenery_sec.Data.sceneryModels[s].Models[m].ModelMatrix[2].Y;
+
+                    modelMatrix.M31 = -scenery_sec.Data.sceneryModels[s].Models[m].ModelMatrix[0].Z;
+                    modelMatrix.M32 = scenery_sec.Data.sceneryModels[s].Models[m].ModelMatrix[1].Z;
+                    modelMatrix.M33 = scenery_sec.Data.sceneryModels[s].Models[m].ModelMatrix[2].Z;
+
+                    modelMatrix.M14 = scenery_sec.Data.sceneryModels[s].Models[m].ModelMatrix[0].W;
+                    modelMatrix.M24 = scenery_sec.Data.sceneryModels[s].Models[m].ModelMatrix[1].W;
+                    modelMatrix.M34 = scenery_sec.Data.sceneryModels[s].Models[m].ModelMatrix[2].W;
+
+                    // Position
+                    modelMatrix.M41 = scenery_sec.Data.sceneryModels[s].Models[m].ModelMatrix[3].X;
+                    modelMatrix.M42 = scenery_sec.Data.sceneryModels[s].Models[m].ModelMatrix[3].Y;
+                    modelMatrix.M43 = scenery_sec.Data.sceneryModels[s].Models[m].ModelMatrix[3].Z;
+                    modelMatrix.M44 = scenery_sec.Data.sceneryModels[s].Models[m].ModelMatrix[3].W;
+
+                    modelMatrix *= Matrix4.CreateScale(-1, 1, 1);
+
+                    Vertex[] vbuffer = new Vertex[mesh.Vertices.Length];
+
+                    for (int v = 0; v < mesh.Vertices.Length; v++)
+                    {
+                        vbuffer[v] = mesh.Vertices[v];
+                        Vector4 vertexPos = new Vector4(mesh.Vertices[v].Pos.X, mesh.Vertices[v].Pos.Y, mesh.Vertices[v].Pos.Z, 1);
+                        vertexPos *= modelMatrix;
+                        if (isLinkedScenery)
+                        {
+                            vertexPos *= ChunkMatrix;
+                        }
+                        mesh.Vertices[v].Pos = new Vector3(vertexPos.X, vertexPos.Y, vertexPos.Z);
+                    }
+
+                    foreach (var v in mesh.Vertices)
+                    {
+                        min_x = Math.Min(min_x, v.Pos.X);
+                        min_y = Math.Min(min_y, v.Pos.Y);
+                        min_z = Math.Min(min_z, v.Pos.Z);
+                        max_x = Math.Max(max_x, v.Pos.X);
+                        max_y = Math.Max(max_y, v.Pos.Y);
+                        max_z = Math.Max(max_z, v.Pos.Z);
+                    }
+
+                    int vtx_id = reserved_layers + static_layers;
+                    if (isUpdate)
+                    {
+                        vtx_id = scenery_layer + scenery_starting_layer;
+                    }
+
+                    vtx[vtx_id] = new VertexBufferData();
+                    vtx[vtx_id].Vtx = mesh.Vertices;
+                    vtx[vtx_id].VtxInd = mesh.Indices;
+                    if (isLinkedScenery)
+                    {
+                        vtx[vtx_id].Type = VertexBufferData.BufferType.ExtraScenery;
+                        vtx[vtx_id].LinkID = LinkID;
+                    }
+                    else
+                    {
+                        vtx[vtx_id].Type = VertexBufferData.BufferType.Scenery;
+                    }
+                    mesh.Vertices = vbuffer;
+                    UpdateVBO(vtx_id);
+                    if (!isUpdate)
+                    {
+                        static_layers++;
+                    }
+                    else
+                    {
+                        scenery_layer++;
+                    }
+                }
+            }
+
+            zFar = Math.Max(zFar, Math.Max(max_x - min_x, Math.Max(max_y - min_y, max_z - min_z)));
+        }
+
+        public void LoadDynamicScenery(FileController file, bool isLinkedScenery, Matrix4 ChunkMatrix, int LinkID)
+        {
+            float min_x = float.MaxValue, min_y = float.MaxValue, min_z = float.MaxValue, max_x = float.MinValue, max_y = float.MinValue, max_z = float.MinValue;
+            DynamicSceneryDataController scenery_sec = file.GetItem<DynamicSceneryDataController>(4);
+            SectionController mesh_sec = file.GetItem<SectionController>(6).GetItem<SectionController>(2);
+            SectionController model_sec = file.GetItem<SectionController>(6).GetItem<SectionController>(6);
+            SectionController special_sec = file.GetItem<SectionController>(6).GetItem<SectionController>(7);
+
+            if (scenery_sec.Data.Size < 12)
+            {
+                return;
+            }
+            if (scenery_sec.Data.ModelCount <= 0)
+            {
+                return;
+            }
+            if (scenery_sec.Data.Models.Length <= 0)
+            {
+                return;
+            }
+            for (int s = 0; s < scenery_sec.Data.Models.Length; s++)
+            {
+                MeshController mesh = mesh_sec.GetItem<MeshController>(model_sec.GetItem<ModelController>(scenery_sec.Data.Models[s].ModelID).Data.MeshID);
+                mesh.LoadMeshData();
+
+                //Matrix3 rot_ins = Matrix3.Identity;
+                //rot_ins *= Matrix3.CreateRotationX(scenery_sec.Data.Models[s].LocalRotation[0] * MathHelper.TwoPi);
+                //rot_ins *= Matrix3.CreateRotationY(scenery_sec.Data.Models[s].LocalRotation[1] * MathHelper.TwoPi);
+                //rot_ins *= Matrix3.CreateRotationZ(scenery_sec.Data.Models[s].LocalRotation[2] * MathHelper.TwoPi);
+                // 404: rotation NOT FOUND!!
+
+                Vector4 pos_ins = scenery_sec.Data.Models[s].WorldPosition.ToVec4();
+                pos_ins.X = -pos_ins.X;
+
+                Vertex[] vbuffer = new Vertex[mesh.Vertices.Length];
+
+                for (int v = 0; v < mesh.Vertices.Length; v++)
+                {
+                    vbuffer[v] = mesh.Vertices[v];
+                    Vector4 vertexPos = new Vector4(mesh.Vertices[v].Pos.X, mesh.Vertices[v].Pos.Y, mesh.Vertices[v].Pos.Z, 1);
+                    //vertexPos *= rot_ins;
+                    if (isLinkedScenery)
+                    {
+                        vertexPos *= ChunkMatrix;
+                    }
+                    vertexPos += pos_ins;
+                    
+                    mesh.Vertices[v].Pos = new Vector3(vertexPos.X, vertexPos.Y, vertexPos.Z);
+                }
+
+                foreach (var v in mesh.Vertices)
+                {
+                    min_x = Math.Min(min_x, v.Pos.X);
+                    min_y = Math.Min(min_y, v.Pos.Y);
+                    min_z = Math.Min(min_z, v.Pos.Z);
+                    max_x = Math.Max(max_x, v.Pos.X);
+                    max_y = Math.Max(max_y, v.Pos.Y);
+                    max_z = Math.Max(max_z, v.Pos.Z);
+                }
+                vtx[reserved_layers + static_layers] = new VertexBufferData();
+                vtx[reserved_layers + static_layers].Vtx = mesh.Vertices;
+                vtx[reserved_layers + static_layers].VtxInd = mesh.Indices;
+                if (isLinkedScenery)
+                {
+                    vtx[reserved_layers + static_layers].Type = VertexBufferData.BufferType.ExtraScenery;
+                    vtx[reserved_layers + static_layers].LinkID = LinkID;
+                }
+                else
+                {
+                    vtx[reserved_layers + static_layers].Type = VertexBufferData.BufferType.Scenery;
+                }
+                mesh.Vertices = vbuffer;
+                UpdateVBO(reserved_layers + static_layers);
+                static_layers++;
+            }
+
+            zFar = Math.Max(zFar, Math.Max(max_x - min_x, Math.Max(max_y - min_y, max_z - min_z)));
+        }
+
+        public void LoadAllLinkedChunks()
+        {
+            string pathMod = "2";
+            if (file.Data.Type == TwinsFile.FileType.RMX)
+            {
+                pathMod = "x";
+            }
+            string origPath = file.DataAux.FileName;
+            SceneryDataController scenery_sec = file.AuxCont.GetItem<SceneryDataController>(0);
+            string curChunkPath = scenery_sec.Data.ChunkName;
+            string adjustedPath = origPath.Substring(0, origPath.Length - curChunkPath.Length - 4);
+            for (int i = 0; i < links.Links.Count; i++)
+            {
+                string ChunkName = new string(links.Links[i].Path);
+                string Path = adjustedPath + ChunkName + ".sm" + pathMod;
+                if (System.IO.File.Exists(Path))
+                {
+                    TwinsFile linkfile = new TwinsFile();
+                    linkfile.LoadFile(Path, file.DataAux.Type);
+                    FileController linkCont = new FileController(null, linkfile, null);
+                    foreach (var a in linkfile.Records)
+                    {
+                        GenTreeNode(a, linkCont, linkCont);
+                    }
+
+                    Pos[] ChunkOffset = links.Links[i].ChunkMatrix;
+                    Matrix4 ChunkMatrix = Matrix4.Identity;
+                    ChunkMatrix.M11 = ChunkOffset[0].X;
+                    ChunkMatrix.M12 = ChunkOffset[1].X;
+                    ChunkMatrix.M13 = ChunkOffset[2].X;
+
+                    ChunkMatrix.M21 = ChunkOffset[0].Y;
+                    ChunkMatrix.M22 = ChunkOffset[1].Y;
+                    ChunkMatrix.M23 = ChunkOffset[2].Y;
+
+                    ChunkMatrix.M31 = ChunkOffset[0].Z;
+                    ChunkMatrix.M32 = ChunkOffset[1].Z;
+                    ChunkMatrix.M33 = ChunkOffset[2].Z;
+
+                    ChunkMatrix.M14 = ChunkOffset[0].W;
+                    ChunkMatrix.M24 = ChunkOffset[1].W;
+                    ChunkMatrix.M34 = ChunkOffset[2].W;
+
+                    ChunkMatrix.M41 = -ChunkOffset[3].X;
+                    ChunkMatrix.M42 = ChunkOffset[3].Y;
+                    ChunkMatrix.M43 = ChunkOffset[3].Z;
+                    ChunkMatrix.M44 = ChunkOffset[3].W;
+
+                    if (file.Data.Type == TwinsFile.FileType.RM2)
+                    {
+                        LoadScenery(linkCont, true, ChunkMatrix, i, false);
+                        LoadDynamicScenery(linkCont, true, ChunkMatrix, i);
+                    }
+
+                    string Path2 = adjustedPath + ChunkName + ".rm" + pathMod;
+                    if (System.IO.File.Exists(Path))
+                    {
+                        TwinsFile linkfile2 = new TwinsFile();
+                        linkfile2.LoadFile(Path2, file.Data.Type);
+                        FileController linkCont2 = new FileController(null, linkfile2, null);
+                        foreach (var a in linkfile2.Records)
+                        {
+                            GenTreeNode(a, linkCont2, linkCont2);
+                        }
+
+                        for (int c = 0; c < 28; c++)
+                        {
+                            LoadColTree(linkCont2, c, true, ChunkMatrix, i);
+                        }
+                    }
+                }
+            }
+        }
+
+        public void UpdateScenery()
+        {
+            scenery_layer = 0;
+            LoadScenery(file.AuxCont, false, new Matrix4(), 0, true);
+        }
+
+        public void GenTreeNode(TwinsItem a, Controller controller, FileController targetFile)
+        {
+            Controller c;
+            if (a is TwinsSection)
+            {
+                c = new SectionController(null, (TwinsSection)a, targetFile);
+                foreach (var i in ((TwinsSection)a).Records)
+                {
+                    GenTreeNode(i, c, targetFile);
+                }
+            }
+            else if (a is Texture)
+                c = new TextureController(null, (Texture)a, targetFile);
+            else if (a is Material)
+                c = new MaterialController(null, (Material)a, targetFile);
+            else if (a is Mesh)
+                c = new MeshController(null, (Mesh)a, targetFile);
+            else if (a is Model)
+                c = new ModelController(null, (Model)a, targetFile);
+            else if (a is Skydome)
+                c = new SkydomeController(null, (Skydome)a, targetFile);
+            else if (a is GameObject)
+                c = new ObjectController(null, (GameObject)a, targetFile);
+            else if (a is Script)
+                c = new ScriptController(null, (Script)a, targetFile);
+            else if (a is SoundEffect)
+                c = new SEController(null, (SoundEffect)a, targetFile);
+            else if (a is AIPosition)
+                c = new AIPositionController(null, (AIPosition)a, targetFile);
+            else if (a is AIPath)
+                c = new AIPathController(null, (AIPath)a, targetFile);
+            else if (a is Position)
+                c = new PositionController(null, (Position)a, targetFile);
+            else if (a is Twinsanity.Path)
+                c = new PathController(null, (Twinsanity.Path)a, targetFile);
+            else if (a is Instance)
+                c = new InstanceController(null, (Instance)a, targetFile);
+            else if (a is Trigger)
+                c = new TriggerController(null, (Trigger)a, targetFile);
+            else if (a is ColData)
+                c = new ColDataController(null, (ColData)a, targetFile);
+            else if (a is ChunkLinks)
+                c = new ChunkLinksController(null, (ChunkLinks)a, targetFile);
+            else if (a is GraphicsInfo)
+                c = new GraphicsInfoController(null, (GraphicsInfo)a, targetFile);
+            else if (a is ArmatureModel)
+                c = new ArmatureModelController(null, (ArmatureModel)a, targetFile);
+            else if (a is ArmatureModelX)
+                c = new ArmatureModelXController(null, (ArmatureModelX)a, targetFile);
+            else if (a is MaterialDemo)
+                c = new MaterialDController(null, (MaterialDemo)a, targetFile);
+            else if (a is SceneryData)
+                c = new SceneryDataController(null, (SceneryData)a, targetFile);
+            else if (a is SpecialModel)
+                c = new SpecialModelController(null, (SpecialModel)a, targetFile);
+            else if (a is ParticleData)
+                c = new ParticleDataController(null, (ParticleData)a, targetFile);
+            else if (a is DynamicSceneryData)
+                c = new DynamicSceneryDataController(null, (DynamicSceneryData)a, targetFile);
+            else if (a is MeshX)
+                c = new MeshXController(null, (MeshX)a, targetFile);
+            else if (a is CollisionSurface)
+                c = new CollisionSurfaceController(null, (CollisionSurface)a, targetFile);
+            else if (a is Camera)
+                c = new CameraController(null, (Camera)a, targetFile);
+            else if (a is InstanceTemplate)
+                c = new InstaceTemplateController(null, (InstanceTemplate)a, targetFile);
+            else
+                c = new ItemController(null, a, targetFile);
+
+            controller.AddNode(c);
         }
 
         public void LoadPositions()
@@ -1051,6 +1953,299 @@ namespace TwinsaityEditor
             }
             zFar = Math.Max(zFar, Math.Max(max_x - min_x, Math.Max(max_y - min_y, max_z - min_z)));
             UpdateVBO(3);
+        }
+
+        public void LoadParticles()
+        {
+            float min_x = float.MaxValue, min_y = float.MaxValue, min_z = float.MaxValue, max_x = float.MinValue, max_y = float.MinValue, max_z = float.MinValue;
+            bool record_exists = false;
+            uint posi_count = 0;
+            record_exists = file.Data.ContainsItem(8);
+            if (!record_exists)
+            {
+                return;
+            }
+            ParticleData partData = file.Data.GetItem<ParticleData>(8);
+            posi_count = partData.ParticleInstanceCount;
+            if (posi_count <= 0)
+            {
+                return;
+            }
+            if (vtx[5] == null || vtx.Length != (circle_res * 3 + 6) * posi_count)
+            {
+                vtx[5].VtxCounts = new int[6 * posi_count];
+                vtx[5].VtxOffs = new int[6 * posi_count];
+                vtx[5].Vtx = new Vertex[(circle_res * 3 + 6) * posi_count];
+                for (int i = 0; i < posi_count; ++i)
+                {
+                    vtx[5].VtxCounts[i * 6 + 0] = 2;
+                    vtx[5].VtxCounts[i * 6 + 1] = 2;
+                    vtx[5].VtxCounts[i * 6 + 2] = 2;
+                    vtx[5].VtxCounts[i * 6 + 3] = circle_res;
+                    vtx[5].VtxCounts[i * 6 + 4] = circle_res;
+                    vtx[5].VtxCounts[i * 6 + 5] = circle_res;
+                }
+            }
+            int l = 0, m = 0;
+            for (int i = 0; i < partData.ParticleInstances.Count; i++)
+            {
+                Matrix3 rot_ins = Matrix3.Identity;
+                rot_ins *= Matrix3.CreateRotationX(partData.ParticleInstances[i].Rot_X / (float)(ushort.MaxValue + 1) * MathHelper.TwoPi);
+                rot_ins *= Matrix3.CreateRotationY(-partData.ParticleInstances[i].Rot_Y / (float)(ushort.MaxValue + 1) * MathHelper.TwoPi);
+                rot_ins *= Matrix3.CreateRotationZ(-partData.ParticleInstances[i].Rot_Z / (float)(ushort.MaxValue + 1) * MathHelper.TwoPi);
+                Vector3 pos_pos = partData.ParticleInstances[i].Position.ToVec3();
+                pos_pos.X = -pos_pos.X;
+                vtx[5].VtxOffs[l++] = m;
+                vtx[5].Vtx[m++] = new Vertex(new Vector3(-indicator_size * 0.75f * 0.5f, 0, 0) * rot_ins + pos_pos, Color.Red);
+                vtx[5].Vtx[m++] = new Vertex(new Vector3(+indicator_size * 0.375f * 0.5f, 0, 0) * rot_ins + pos_pos, Color.Red);
+                vtx[5].VtxOffs[l++] = m;
+                vtx[5].Vtx[m++] = new Vertex(new Vector3(0, indicator_size * 0.75f * 0.5f, 0) * rot_ins + pos_pos, Color.Green);
+                vtx[5].Vtx[m++] = new Vertex(new Vector3(0, -indicator_size * 0.375f * 0.5f, 0) * rot_ins + pos_pos, Color.Green);
+                vtx[5].VtxOffs[l++] = m;
+                vtx[5].Vtx[m++] = new Vertex(new Vector3(0, 0, indicator_size * 0.75f * 0.5f) * rot_ins + pos_pos, Color.Blue);
+                vtx[5].Vtx[m++] = new Vertex(new Vector3(0, 0, -indicator_size * 0.375f * 0.5f) * rot_ins + pos_pos, Color.Blue);
+                Color cur_color = Color.Pink;
+                vtx[5].VtxOffs[l++] = m;
+                for (int j = 0; j < circle_res; ++j)
+                {
+                    Vector3 vec = new Vector3(0, 0, indicator_size);
+                    vec *= Matrix3.Identity * Matrix3.CreateRotationX(MathHelper.TwoPi / circle_res * j);
+                    vtx[5].Vtx[m++] = new Vertex(pos_pos + vec, cur_color);
+                }
+                vtx[5].VtxOffs[l++] = m;
+                for (int j = 0; j < circle_res; ++j)
+                {
+                    Vector3 vec = new Vector3(0, 0, indicator_size);
+                    vec *= Matrix3.Identity * Matrix3.CreateRotationY(MathHelper.TwoPi / circle_res * j);
+                    vtx[5].Vtx[m++] = new Vertex(pos_pos + vec, cur_color);
+                }
+                vtx[5].VtxOffs[l++] = m;
+                for (int j = 0; j < circle_res; ++j)
+                {
+                    Vector3 vec = new Vector3(0, indicator_size, 0);
+                    vec *= Matrix3.Identity * Matrix3.CreateRotationZ(MathHelper.TwoPi / circle_res * j);
+                    vtx[5].Vtx[m++] = new Vertex(pos_pos + vec, cur_color);
+                }
+                min_x = Math.Min(min_x, pos_pos.X);
+                min_y = Math.Min(min_y, pos_pos.Y);
+                min_z = Math.Min(min_z, pos_pos.Z);
+                max_x = Math.Max(max_x, pos_pos.X);
+                max_y = Math.Max(max_y, pos_pos.Y);
+                max_z = Math.Max(max_z, pos_pos.Z);
+            }
+            zFar = Math.Max(zFar, Math.Max(max_x - min_x, Math.Max(max_y - min_y, max_z - min_z)));
+            UpdateVBO(5);
+        }
+
+        public void LoadLights()
+        {
+            float min_x = float.MaxValue, min_y = float.MaxValue, min_z = float.MaxValue, max_x = float.MinValue, max_y = float.MinValue, max_z = float.MinValue;
+            uint posi_count = 0;
+            if (file.DataAux == null)
+            {
+                return;
+            }
+            SceneryData partData = file.DataAux.GetItem<SceneryData>(0);
+            posi_count = (uint)partData.LightsPoint.Count + (uint)partData.LightsAmbient.Count + (uint)partData.LightsDirectional.Count + (uint)partData.LightsNegative.Count;
+            if (posi_count <= 0)
+            {
+                return;
+            }
+            if (vtx[6] == null)
+            {
+                vtx[6] = new VertexBufferData();
+                vtx[6].VtxCounts = new int[6 * posi_count];
+                vtx[6].VtxOffs = new int[6 * posi_count];
+                vtx[6].Vtx = new Vertex[(circle_res * 3 + 6) * posi_count];
+                for (int i = 0; i < posi_count; ++i)
+                {
+                    vtx[6].VtxCounts[i * 6 + 0] = 2;
+                    vtx[6].VtxCounts[i * 6 + 1] = 2;
+                    vtx[6].VtxCounts[i * 6 + 2] = 2;
+                    vtx[6].VtxCounts[i * 6 + 3] = circle_res;
+                    vtx[6].VtxCounts[i * 6 + 4] = circle_res;
+                    vtx[6].VtxCounts[i * 6 + 5] = circle_res;
+                }
+            }
+            int l = 0, m = 0;
+            for (int i = 0; i < partData.LightsAmbient.Count; i++)
+            {
+                Matrix3 rot_ins = Matrix3.Identity;
+                Vector3 pos_pos = partData.LightsAmbient[i].Position.ToVec3();
+                pos_pos.X = -pos_pos.X;
+                float LightSize = partData.LightsAmbient[i].Radius / 10f;
+                vtx[6].VtxOffs[l++] = m;
+                vtx[6].Vtx[m++] = new Vertex(new Vector3(-indicator_size * 0.75f * 0.5f, 0, 0) * rot_ins + pos_pos, Color.Red);
+                vtx[6].Vtx[m++] = new Vertex(new Vector3(+indicator_size * 0.375f * 0.5f, 0, 0) * rot_ins + pos_pos, Color.Red);
+                vtx[6].VtxOffs[l++] = m;
+                vtx[6].Vtx[m++] = new Vertex(new Vector3(0, indicator_size * 0.75f * 0.5f, 0) * rot_ins + pos_pos, Color.Green);
+                vtx[6].Vtx[m++] = new Vertex(new Vector3(0, -indicator_size * 0.375f * 0.5f, 0) * rot_ins + pos_pos, Color.Green);
+                vtx[6].VtxOffs[l++] = m;
+                vtx[6].Vtx[m++] = new Vertex(new Vector3(0, 0, indicator_size * 0.75f * 0.5f) * rot_ins + pos_pos, Color.Blue);
+                vtx[6].Vtx[m++] = new Vertex(new Vector3(0, 0, -indicator_size * 0.375f * 0.5f) * rot_ins + pos_pos, Color.Blue);
+                Color cur_color = Color.FromArgb(255, (int)(partData.LightsAmbient[i].Color_R * 255), (int)(partData.LightsAmbient[i].Color_G * 255), (int)(partData.LightsAmbient[i].Color_B * 255));  //Color.White;
+                vtx[6].VtxOffs[l++] = m;
+                for (int j = 0; j < circle_res; ++j)
+                {
+                    Vector3 vec = new Vector3(0, 0, LightSize);
+                    vec *= Matrix3.Identity * Matrix3.CreateRotationX(MathHelper.TwoPi / circle_res * j);
+                    vtx[6].Vtx[m++] = new Vertex(pos_pos + vec, cur_color);
+                }
+                vtx[6].VtxOffs[l++] = m;
+                for (int j = 0; j < circle_res; ++j)
+                {
+                    Vector3 vec = new Vector3(0, 0, LightSize);
+                    vec *= Matrix3.Identity * Matrix3.CreateRotationY(MathHelper.TwoPi / circle_res * j);
+                    vtx[6].Vtx[m++] = new Vertex(pos_pos + vec, cur_color);
+                }
+                vtx[6].VtxOffs[l++] = m;
+                for (int j = 0; j < circle_res; ++j)
+                {
+                    Vector3 vec = new Vector3(0, LightSize, 0);
+                    vec *= Matrix3.Identity * Matrix3.CreateRotationZ(MathHelper.TwoPi / circle_res * j);
+                    vtx[6].Vtx[m++] = new Vertex(pos_pos + vec, cur_color);
+                }
+                min_x = Math.Min(min_x, pos_pos.X);
+                min_y = Math.Min(min_y, pos_pos.Y);
+                min_z = Math.Min(min_z, pos_pos.Z);
+                max_x = Math.Max(max_x, pos_pos.X);
+                max_y = Math.Max(max_y, pos_pos.Y);
+                max_z = Math.Max(max_z, pos_pos.Z);
+            }
+            for (int i = 0; i < partData.LightsDirectional.Count; i++)
+            {
+                Matrix3 rot_ins = Matrix3.Identity;
+                Vector3 pos_pos = partData.LightsDirectional[i].Position.ToVec3();
+                pos_pos.X = -pos_pos.X;
+                float LightSize = partData.LightsDirectional[i].Radius / 10f;
+                vtx[6].VtxOffs[l++] = m;
+                vtx[6].Vtx[m++] = new Vertex(new Vector3(-indicator_size * 0.75f * 0.5f, 0, 0) * rot_ins + pos_pos, Color.Red);
+                vtx[6].Vtx[m++] = new Vertex(new Vector3(+indicator_size * 0.375f * 0.5f, 0, 0) * rot_ins + pos_pos, Color.Red);
+                vtx[6].VtxOffs[l++] = m;
+                vtx[6].Vtx[m++] = new Vertex(new Vector3(0, indicator_size * 0.75f * 0.5f, 0) * rot_ins + pos_pos, Color.Green);
+                vtx[6].Vtx[m++] = new Vertex(new Vector3(0, -indicator_size * 0.375f * 0.5f, 0) * rot_ins + pos_pos, Color.Green);
+                vtx[6].VtxOffs[l++] = m;
+                vtx[6].Vtx[m++] = new Vertex(new Vector3(0, 0, indicator_size * 0.75f * 0.5f) * rot_ins + pos_pos, Color.Blue);
+                vtx[6].Vtx[m++] = new Vertex(new Vector3(0, 0, -indicator_size * 0.375f * 0.5f) * rot_ins + pos_pos, Color.Blue);
+                Color cur_color = Color.FromArgb(255, (int)(partData.LightsDirectional[i].Color_R * 255), (int)(partData.LightsDirectional[i].Color_G * 255), (int)(partData.LightsDirectional[i].Color_B * 255));  //Color.White;
+                vtx[6].VtxOffs[l++] = m;
+                for (int j = 0; j < circle_res; ++j)
+                {
+                    Vector3 vec = new Vector3(0, 0, LightSize);
+                    vec *= Matrix3.Identity * Matrix3.CreateRotationX(MathHelper.TwoPi / circle_res * j);
+                    vtx[6].Vtx[m++] = new Vertex(pos_pos + vec, cur_color);
+                }
+                vtx[6].VtxOffs[l++] = m;
+                for (int j = 0; j < circle_res; ++j)
+                {
+                    Vector3 vec = new Vector3(0, 0, LightSize);
+                    vec *= Matrix3.Identity * Matrix3.CreateRotationY(MathHelper.TwoPi / circle_res * j);
+                    vtx[6].Vtx[m++] = new Vertex(pos_pos + vec, cur_color);
+                }
+                vtx[6].VtxOffs[l++] = m;
+                for (int j = 0; j < circle_res; ++j)
+                {
+                    Vector3 vec = new Vector3(0, LightSize, 0);
+                    vec *= Matrix3.Identity * Matrix3.CreateRotationZ(MathHelper.TwoPi / circle_res * j);
+                    vtx[6].Vtx[m++] = new Vertex(pos_pos + vec, cur_color);
+                }
+                min_x = Math.Min(min_x, pos_pos.X);
+                min_y = Math.Min(min_y, pos_pos.Y);
+                min_z = Math.Min(min_z, pos_pos.Z);
+                max_x = Math.Max(max_x, pos_pos.X);
+                max_y = Math.Max(max_y, pos_pos.Y);
+                max_z = Math.Max(max_z, pos_pos.Z);
+            }
+            for (int i = 0; i < partData.LightsPoint.Count; i++)
+            {
+                Matrix3 rot_ins = Matrix3.Identity;
+                Vector3 pos_pos = partData.LightsPoint[i].Position.ToVec3();
+                pos_pos.X = -pos_pos.X;
+                float LightSize = partData.LightsPoint[i].Radius / 10f;
+                vtx[6].VtxOffs[l++] = m;
+                vtx[6].Vtx[m++] = new Vertex(new Vector3(-indicator_size * 0.75f * 0.5f, 0, 0) * rot_ins + pos_pos, Color.Red);
+                vtx[6].Vtx[m++] = new Vertex(new Vector3(+indicator_size * 0.375f * 0.5f, 0, 0) * rot_ins + pos_pos, Color.Red);
+                vtx[6].VtxOffs[l++] = m;
+                vtx[6].Vtx[m++] = new Vertex(new Vector3(0, indicator_size * 0.75f * 0.5f, 0) * rot_ins + pos_pos, Color.Green);
+                vtx[6].Vtx[m++] = new Vertex(new Vector3(0, -indicator_size * 0.375f * 0.5f, 0) * rot_ins + pos_pos, Color.Green);
+                vtx[6].VtxOffs[l++] = m;
+                vtx[6].Vtx[m++] = new Vertex(new Vector3(0, 0, indicator_size * 0.75f * 0.5f) * rot_ins + pos_pos, Color.Blue);
+                vtx[6].Vtx[m++] = new Vertex(new Vector3(0, 0, -indicator_size * 0.375f * 0.5f) * rot_ins + pos_pos, Color.Blue);
+                Color cur_color = Color.FromArgb(255, (int)(partData.LightsPoint[i].Color_R * 255), (int)(partData.LightsPoint[i].Color_G * 255), (int)(partData.LightsPoint[i].Color_B * 255));  //Color.Yellow;
+                vtx[6].VtxOffs[l++] = m;
+                for (int j = 0; j < circle_res; ++j)
+                {
+                    Vector3 vec = new Vector3(0, 0, LightSize);
+                    vec *= Matrix3.Identity * Matrix3.CreateRotationX(MathHelper.TwoPi / circle_res * j);
+                    vtx[6].Vtx[m++] = new Vertex(pos_pos + vec, cur_color);
+                }
+                vtx[6].VtxOffs[l++] = m;
+                for (int j = 0; j < circle_res; ++j)
+                {
+                    Vector3 vec = new Vector3(0, 0, LightSize);
+                    vec *= Matrix3.Identity * Matrix3.CreateRotationY(MathHelper.TwoPi / circle_res * j);
+                    vtx[6].Vtx[m++] = new Vertex(pos_pos + vec, cur_color);
+                }
+                vtx[6].VtxOffs[l++] = m;
+                for (int j = 0; j < circle_res; ++j)
+                {
+                    Vector3 vec = new Vector3(0, LightSize, 0);
+                    vec *= Matrix3.Identity * Matrix3.CreateRotationZ(MathHelper.TwoPi / circle_res * j);
+                    vtx[6].Vtx[m++] = new Vertex(pos_pos + vec, cur_color);
+                }
+                min_x = Math.Min(min_x, pos_pos.X);
+                min_y = Math.Min(min_y, pos_pos.Y);
+                min_z = Math.Min(min_z, pos_pos.Z);
+                max_x = Math.Max(max_x, pos_pos.X);
+                max_y = Math.Max(max_y, pos_pos.Y);
+                max_z = Math.Max(max_z, pos_pos.Z);
+            }
+            for (int i = 0; i < partData.LightsNegative.Count; i++)
+            {
+                Matrix3 rot_ins = Matrix3.Identity;
+                Vector3 pos_pos = partData.LightsNegative[i].Position.ToVec3();
+                pos_pos.X = -pos_pos.X;
+                float LightSize = partData.LightsNegative[i].Radius / 10f;
+                vtx[6].VtxOffs[l++] = m;
+                vtx[6].Vtx[m++] = new Vertex(new Vector3(-indicator_size * 0.75f * 0.5f, 0, 0) * rot_ins + pos_pos, Color.Red);
+                vtx[6].Vtx[m++] = new Vertex(new Vector3(+indicator_size * 0.375f * 0.5f, 0, 0) * rot_ins + pos_pos, Color.Red);
+                vtx[6].VtxOffs[l++] = m;
+                vtx[6].Vtx[m++] = new Vertex(new Vector3(0, indicator_size * 0.75f * 0.5f, 0) * rot_ins + pos_pos, Color.Green);
+                vtx[6].Vtx[m++] = new Vertex(new Vector3(0, -indicator_size * 0.375f * 0.5f, 0) * rot_ins + pos_pos, Color.Green);
+                vtx[6].VtxOffs[l++] = m;
+                vtx[6].Vtx[m++] = new Vertex(new Vector3(0, 0, indicator_size * 0.75f * 0.5f) * rot_ins + pos_pos, Color.Blue);
+                vtx[6].Vtx[m++] = new Vertex(new Vector3(0, 0, -indicator_size * 0.375f * 0.5f) * rot_ins + pos_pos, Color.Blue);
+                Color cur_color = Color.FromArgb(255, (int)(partData.LightsNegative[i].Color_R * 255), (int)(partData.LightsNegative[i].Color_G * 255), (int)(partData.LightsNegative[i].Color_B * 255));  //Color.White;
+                vtx[6].VtxOffs[l++] = m;
+                for (int j = 0; j < circle_res; ++j)
+                {
+                    Vector3 vec = new Vector3(0, 0, LightSize);
+                    vec *= Matrix3.Identity * Matrix3.CreateRotationX(MathHelper.TwoPi / circle_res * j);
+                    vtx[6].Vtx[m++] = new Vertex(pos_pos + vec, cur_color);
+                }
+                vtx[6].VtxOffs[l++] = m;
+                for (int j = 0; j < circle_res; ++j)
+                {
+                    Vector3 vec = new Vector3(0, 0, LightSize);
+                    vec *= Matrix3.Identity * Matrix3.CreateRotationY(MathHelper.TwoPi / circle_res * j);
+                    vtx[6].Vtx[m++] = new Vertex(pos_pos + vec, cur_color);
+                }
+                vtx[6].VtxOffs[l++] = m;
+                for (int j = 0; j < circle_res; ++j)
+                {
+                    Vector3 vec = new Vector3(0, LightSize, 0);
+                    vec *= Matrix3.Identity * Matrix3.CreateRotationZ(MathHelper.TwoPi / circle_res * j);
+                    vtx[6].Vtx[m++] = new Vertex(pos_pos + vec, cur_color);
+                }
+                min_x = Math.Min(min_x, pos_pos.X);
+                min_y = Math.Min(min_y, pos_pos.Y);
+                min_z = Math.Min(min_z, pos_pos.Z);
+                max_x = Math.Max(max_x, pos_pos.X);
+                max_y = Math.Max(max_y, pos_pos.Y);
+                max_z = Math.Max(max_z, pos_pos.Z);
+            }
+            zFar = Math.Max(zFar, Math.Max(max_x - min_x, Math.Max(max_y - min_y, max_z - min_z)));
+            UpdateVBO(6);
         }
 
         public void LoadAIPositions()
@@ -1158,6 +2353,15 @@ namespace TwinsaityEditor
             {
                 SetPosition(new Vector3(-trig.Coords[1].X, trig.Coords[1].Y, trig.Coords[1].Z));
             }
+            else if (file.SelectedItem is Camera cam)
+            {
+                SetPosition(new Vector3(-cam.TriggerPos.X, cam.TriggerPos.Y, cam.TriggerPos.Z));
+            }
+        }
+
+        public void CustomTeleport(float X, float Y, float Z)
+        {
+            SetPosition(new Vector3(-X, Y, Z));
         }
 
         /// <summary> 

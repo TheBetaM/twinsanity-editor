@@ -4,7 +4,7 @@ using System.Windows.Controls;
 using System.Windows.Forms;
 using Twinsanity;
 
-namespace TwinsaityEditor
+namespace TwinsanityEditor
 {
     public partial class InstanceEditor : Form
     {
@@ -396,7 +396,7 @@ namespace TwinsaityEditor
                 UnkI322 = new List<float>() { 1 },
                 UnkI323 = new List<uint>() { 0, 0 } };
             controller.Data.AddItem(id, new_ins);
-            ((MainForm)Tag).GenTreeNode(new_ins, controller);
+            ((MainForm)Tag).GenTreeNode(new_ins, controller, controller.MainFile);
             ins = new_ins;
             listBox1.Items.Add(GenTextForList(ins));
             controller.UpdateText();
@@ -544,7 +544,7 @@ namespace TwinsaityEditor
                 PositionIDs = last_inst.PositionIDs,
             };
             controller.Data.AddItem(id, new_ins);
-            ((MainForm)Tag).GenTreeNode(new_ins, controller);
+            ((MainForm)Tag).GenTreeNode(new_ins, controller, controller.MainFile);
             ins = new_ins;
             listBox1.Items.Add(GenTextForList(ins));
             controller.UpdateText();

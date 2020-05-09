@@ -2,16 +2,16 @@
 using System.IO;
 using Twinsanity;
 
-namespace TwinsaityEditor
+namespace TwinsanityEditor
 {
     public class ItemController : Controller
     {
         public TwinsItem Data { get; set; }
         public FileController MainFile { get; private set; }
 
-        public ItemController(MainForm topform, TwinsItem item) : base(topform)
+        public ItemController(MainForm topform, TwinsItem item, FileController targetFile) : base(topform)
         {
-            MainFile = TopForm.CurCont;
+            MainFile = targetFile;
             Data = item;
             AddMenu("Extract raw data to file", Menu_ExtractItem);
             AddMenu("Replace raw data with new file", Menu_ReplaceItem);

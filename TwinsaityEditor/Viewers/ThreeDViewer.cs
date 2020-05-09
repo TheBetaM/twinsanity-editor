@@ -7,10 +7,11 @@ using System.Drawing.Imaging;
 using System.IO;
 using System.Windows.Forms;
 
-namespace TwinsaityEditor
+namespace TwinsanityEditor
 {
     public abstract class ThreeDViewer : GLControl
     {
+
         //add to preferences later
         protected static readonly Color[] colors = new[]
         {
@@ -40,8 +41,10 @@ namespace TwinsaityEditor
             Color.MediumVioletRed,
             Color.MediumOrchid,
             Color.DarkGray,
-            Color.Yellow,
-            Color.Goldenrod
+            Color.DeepSkyBlue,
+            Color.RoyalBlue,
+            //Color.Yellow,
+            //Color.Goldenrod
         };
         protected static readonly float indicator_size = 0.5f;
         protected static Matrix3 identity_mat = Matrix3.Identity;
@@ -57,6 +60,7 @@ namespace TwinsaityEditor
         private float sca, range;
         private Timer refresh;
         private bool k_w, k_a, k_s, k_d, k_e, k_q, m_l, k_shift, k_ctrl;
+        public bool show_hud;
         private int m_x, m_y;
         private EventHandler _inputHandle;
         private static FontWrapper.FontService _fntService = new FontWrapper.FontService();
@@ -158,7 +162,18 @@ namespace TwinsaityEditor
         //protected abstract void RenderHUD();
         protected virtual void RenderHUD()
         {
-            RenderString2D($"RenderObjects: {timeRenderObj}ms (max: {timeRenderObj_max}ms, min: {timeRenderObj_min}ms)\nRenderHUD: {timeRenderHud}ms (max: {timeRenderHud_max}ms, min: {timeRenderHud_min}ms)", 0, 0, 10, Color.White);
+            if (!show_hud)
+            {
+                return;
+            }
+            RenderString2D("X: " + (-pos.X), 6, 6, 14, 16, Color.Black);
+            RenderString2D("Y: " + pos.Y, 156, 6, 14, 16, Color.Black);
+            RenderString2D("Z: " + pos.Z, 306, 6, 14, 16, Color.Black);
+            RenderString2D("X: " + (-pos.X), 4, 4, 14, 16, Color.White);
+            RenderString2D("Y: " + pos.Y, 154, 4, 14, 16, Color.White);
+            RenderString2D("Z: " + pos.Z, 304, 4, 14, 16, Color.White);
+            RenderString2D($"RenderObjects: {timeRenderObj}ms (max: {timeRenderObj_max}ms, min: {timeRenderObj_min}ms)\nRenderHUD: {timeRenderHud}ms (max: {timeRenderHud_max}ms, min: {timeRenderHud_min}ms)", 2, 26, 12, 16, Color.Black, TextAnchor.TopLeft);
+            RenderString2D($"RenderObjects: {timeRenderObj}ms (max: {timeRenderObj_max}ms, min: {timeRenderObj_min}ms)\nRenderHUD: {timeRenderHud}ms (max: {timeRenderHud_max}ms, min: {timeRenderHud_min}ms)", 0, 24, 12, 16, Color.White, TextAnchor.TopLeft);
         }
 
         private void ResetCamera()
@@ -213,6 +228,19 @@ namespace TwinsaityEditor
             }
             m_x = e.X;
             m_y = e.Y;
+        }
+
+        private void InitializeComponent()
+        {
+            this.SuspendLayout();
+            // 
+            // ThreeDViewer
+            // 
+            this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
+            this.Name = "ThreeDViewer";
+            this.Size = new System.Drawing.Size(200, 200);
+            this.ResumeLayout(false);
+
         }
 
         protected override void OnMouseWheel(MouseEventArgs e)
@@ -320,9 +348,9 @@ namespace TwinsaityEditor
             GL.MatrixMode(MatrixMode.Modelview);
             GL.LoadIdentity();
             GL.Scale(sca, sca, sca);
-            GL.Rotate(rot.Y,1,0,0);
-            GL.Rotate(rot.X,0,1,0);
-            GL.Rotate(rot.Z,0,0,1);
+            GL.Rotate(rot.Y, 1, 0, 0);
+            GL.Rotate(rot.X, 0, 1, 0);
+            GL.Rotate(rot.Z, 0, 0, 1);
             Vector3 delta = new Vector3(0, 0, -1) * range / 25f;
             Matrix4 rot_matrix = Matrix4.CreateFromAxisAngle(new Vector3(0, 1, 0), MathHelper.DegreesToRadians(rot.X));
             rot_matrix *= Matrix4.CreateFromAxisAngle(new Vector3(1, 0, 0), MathHelper.DegreesToRadians(rot.Y));
@@ -333,7 +361,10 @@ namespace TwinsaityEditor
             GL.PushMatrix();
             GL.Translate(pos.X*2, 0, 0);
             GL.Scale(-1, 1, 1);
-            DrawAxes(pos.X, pos.Y, pos.Z, 1);
+            if (show_hud)
+            {
+                DrawAxes(pos.X, pos.Y, pos.Z, 1);
+            }
             GL.PopMatrix();
             var watch = System.Diagnostics.Stopwatch.StartNew();
             RenderObjects();
@@ -362,9 +393,7 @@ namespace TwinsaityEditor
             GL.AlphaFunc(AlphaFunction.Greater, 0);
             GL.BlendFunc(BlendingFactor.SrcAlpha, BlendingFactor.OneMinusSrcAlpha);
             GL.Hint(HintTarget.PerspectiveCorrectionHint, HintMode.Fastest);
-            GL.ClearColor(Color.MidnightBlue); //TODO: Add clear color to Preferences later
-            // Lighting settings. Lighting must be enabled for them to take effect, logically
-            GL.Light(LightName.Light0, LightParameter.Position, new float[] { 0, 0, 0, 1 });
+            GL.ClearColor(Color.Black); //TODO: Add clear color to Preferences later
             GL.Light(LightName.Light0, LightParameter.Ambient, new float[] { 0.25f, 0.25f, 0.25f, 1 }); // set some minimum light parameters so less shading doesn't make things too dark
             GL.Light(LightName.Light0, LightParameter.ConstantAttenuation, 1.5f); // reduce direct light intensity
             GL.LightModel(LightModelParameter.LightModelTwoSide, 1);
@@ -375,13 +404,13 @@ namespace TwinsaityEditor
             base.OnLoad(e);
         }
 
-        protected void InitVBO(int count)
+        protected void InitVBO(int count, bool ForceCreate)
         {
             MakeCurrent();
             vtx = new VertexBufferData[count];
             for (int i = 0; i < count; ++i)
             {
-                if (i > 4)
+                if (i > 5 && !ForceCreate)
                 {
                     vtx[i] = null;
                 }
@@ -560,7 +589,7 @@ namespace TwinsaityEditor
             GL.BindTexture(TextureTarget.Texture2D, 0);
         }
 
-        protected void RenderString2D(string s, float x, float y, float text_size, Color col, TextAnchor anchor = TextAnchor.TopLeft)
+        protected void RenderString2D(string s, float x, float y, float text_size, float newline_size, Color col, TextAnchor anchor = TextAnchor.TopLeft)
         {
             float text_size_fac = text_size / size;
             float start_x = x;
@@ -568,7 +597,7 @@ namespace TwinsaityEditor
             {
                 if ((anchor == TextAnchor.BotLeft || anchor == TextAnchor.BotMiddle || anchor == TextAnchor.BotRight) && c == '\n')
                 {
-                    y -= text_size;
+                    y -= newline_size;
                     continue;
                 }
                 if (!charAdvanceX.ContainsKey(c))
@@ -589,7 +618,7 @@ namespace TwinsaityEditor
                 if (c == '\n')
                 {
                     x = start_x;
-                    y += text_size;
+                    y += newline_size;
                     continue;
                 }
                 if (c != ' ')

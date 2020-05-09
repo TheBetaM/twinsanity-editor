@@ -2,7 +2,7 @@
 using System;
 using System.Windows.Forms;
 
-namespace TwinsaityEditor
+namespace TwinsanityEditor
 {
     public class MeshViewer : ThreeDViewer
     {
@@ -20,7 +20,7 @@ namespace TwinsaityEditor
             lighting = true;
             wire = false;
             Tag = pform;
-            InitVBO(1);
+            InitVBO(1, true);
             pform.Text = "Loading mesh...";
             LoadMesh();
             pform.Text = "Initializing...";
@@ -29,7 +29,7 @@ namespace TwinsaityEditor
         protected override void RenderHUD()
         {
             base.RenderHUD();
-            RenderString2D("Press L to toggle lighting\nPress X to toggle wireframe", 0, Height, 12, System.Drawing.Color.White, TextAnchor.BotLeft);
+            RenderString2D("Press L to toggle lighting\nPress X to toggle wireframe", 0, Height, 12, 14, System.Drawing.Color.White, TextAnchor.BotLeft);
         }
 
         protected override void RenderObjects()

@@ -1,12 +1,12 @@
 ﻿using Twinsanity;
 
-namespace TwinsaityEditor
+namespace TwinsanityEditor
 {
     public class MaterialDController : ItemController
     {
         public new MaterialDemo Data { get; set; }
 
-        public MaterialDController(MainForm topform, MaterialDemo item) : base(topform, item)
+        public MaterialDController(MainForm topform, MaterialDemo item, FileController targetFile) : base(topform, item, targetFile)
         {
             Data = item;
         }

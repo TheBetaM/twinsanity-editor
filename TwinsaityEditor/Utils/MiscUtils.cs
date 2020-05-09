@@ -1,7 +1,7 @@
 ﻿using Twinsanity;
 using System;
 
-namespace TwinsaityEditor.Utils
+namespace TwinsanityEditor.Utils
 {
     static class TextUtils
     {

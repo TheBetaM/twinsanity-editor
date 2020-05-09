@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.Windows.Forms;
 
-namespace TwinsaityEditor
+namespace TwinsanityEditor
 {
     public class FileController : SectionController
     {
@@ -10,6 +10,8 @@ namespace TwinsaityEditor
         public TwinsFile DataAux { get; set; }
         public TwinsFile DataDefault { get; set; }
         public FileController DefaultCont { get; set; }
+        public FileController AuxCont { get; set; }
+        public ParticleDataController AuxPTL { get; set; }
 
         public string FileName { get => Data.FileName; }
         public string SafeFileName { get => Data.SafeFileName; }
@@ -20,10 +22,13 @@ namespace TwinsaityEditor
 
         public TwinsItem SelectedItem { get; set; } = null;
         public int SelectedItemArg { get; set; } = -1;
+        public bool IsCached = false;
 
         //Editors
         private Form editChunkLinks;
-        private readonly Form[] editInstances = new Form[8], editPositions = new Form[8], editPaths = new Form[8], editTriggers = new Form[8];
+        private Form editParticles;
+        private Form editScenery;
+        private readonly Form[] editInstances = new Form[8], editPositions = new Form[8], editPaths = new Form[8], editTriggers = new Form[8], editCameras = new Form[8];
 
         //Viewers
         private Form colForm;
@@ -33,7 +38,7 @@ namespace TwinsaityEditor
         private Dictionary<uint, Form> MeshViewers { get; set; }
         private Dictionary<uint, Form> ModelViewers { get; set; }
 
-        public FileController(MainForm topform, TwinsFile item) : base(topform, item)
+        public FileController(MainForm topform, TwinsFile item, FileController targetFile) : base(topform, item, targetFile)
         {
             Data = item;
             DataAux = null;
@@ -47,7 +52,14 @@ namespace TwinsaityEditor
 
         protected override string GetName()
         {
-            return "File";
+            if (IsCached)
+            {
+                return "Default " + Data.Type + " File";
+            }
+            else
+            {
+                return Data.Type + " File";
+            }
         }
 
         protected override void GenText()
@@ -114,6 +126,8 @@ namespace TwinsaityEditor
             CloseAllModelViewers();
             CloseEditor(Editors.ChunkLinks);
             CloseEditor(Editors.ColData);
+            CloseEditor(Editors.Particles);
+            CloseEditor(Editors.Scenery);
             for (int i = 0; i <= 7; ++i)
             {
                 CloseEditor(Editors.Instance, i);
@@ -138,6 +152,12 @@ namespace TwinsaityEditor
                 OpenEditor(ref editInstances[((InstanceController)c).Data.Parent.Parent.ID], Editors.Instance, (Controller)c.Node.Parent.Tag);
             else if (c is TriggerController)
                 OpenEditor(ref editTriggers[((TriggerController)c).Data.Parent.Parent.ID], Editors.Trigger, (Controller)c.Node.Parent.Tag);
+            else if (c is ParticleDataController)
+                OpenEditor(ref editParticles, Editors.Particles, (Controller)c.Node.Tag);
+            else if (c is SceneryDataController)
+                OpenEditor(ref editScenery, Editors.Scenery, (Controller)c.Node.Tag);
+            else if (c is CameraController)
+                OpenEditor(ref editCameras[((CameraController)c).Data.Parent.Parent.ID], Editors.Cameras, (Controller)c.Node.Parent.Tag);
             else if (c is SectionController s)
             {
                 if (s.Data.Type == SectionType.ObjectInstance)
@@ -148,6 +168,10 @@ namespace TwinsaityEditor
                     OpenEditor(ref editPaths[s.Data.Parent.ID], Editors.Path, c);
                 else if (s.Data.Type == SectionType.Trigger)
                     OpenEditor(ref editTriggers[s.Data.Parent.ID], Editors.Trigger, c);
+                else if (s.Data.Type == SectionType.ParticleData)
+                    OpenEditor(ref editParticles, Editors.Particles, c);
+                else if (s.Data.Type == SectionType.Camera)
+                    OpenEditor(ref editCameras[s.Data.Parent.ID], Editors.Cameras, c);
             }
         }
 
@@ -168,6 +192,9 @@ namespace TwinsaityEditor
                     case Editors.Path: editor_var = new PathEditor((SectionController)cont) { Tag = TopForm }; break;
                     case Editors.Instance: editor_var = new InstanceEditor((SectionController)cont) { Tag = TopForm }; break;
                     case Editors.Trigger: editor_var = new TriggerEditor((SectionController)cont) { Tag = TopForm }; break;
+                    case Editors.Particles: editor_var = new ParticleEditor((ParticleDataController)cont) { Tag = TopForm }; break;
+                    case Editors.Scenery: editor_var = new SceneryEditor((SceneryDataController)cont) { Tag = TopForm }; break;
+                    case Editors.Cameras: editor_var = new CameraEditor((SectionController)cont) { Tag = TopForm }; break;
                 }
                 editor_var.Show();
             }
@@ -186,6 +213,9 @@ namespace TwinsaityEditor
                 case Editors.Position: editorForm = editPositions[arg]; break;
                 case Editors.Path: editorForm = editPaths[arg]; break;
                 case Editors.Trigger: editorForm = editTriggers[arg]; break;
+                case Editors.Scenery: editorForm = editScenery; break;
+                case Editors.Particles: editorForm = editParticles; break;
+                case Editors.Cameras: editorForm = editCameras[arg]; break;
             }
             CloseForm(ref editorForm);
         }
@@ -209,6 +239,27 @@ namespace TwinsaityEditor
             else
                 MeshViewers[id].Select();
         }
+        public void OpenMeshViewer(MeshXController c)
+        {
+            /*
+            var id = c.Data.ID;
+            if (!MeshViewers.ContainsKey(id))
+            {
+                var f = new Form { Size = new System.Drawing.Size(480, 480), Text = "Initializing viewer..." };
+                f.FormClosed += delegate
+                {
+                    MeshViewers.Remove(id);
+                };
+                f.Show();
+                MeshViewer v = new MeshViewer(c, ref f) { Dock = DockStyle.Fill };
+                f.Controls.Add(v);
+                f.Text = "MeshViewer";
+                MeshViewers.Add(id, f);
+            }
+            else
+                MeshViewers[id].Select();
+            */
+        }
 
         public void CloseMeshViewer(uint mesh_id)
         {
@@ -229,6 +280,43 @@ namespace TwinsaityEditor
 
         public void OpenModelViewer(ModelController c)
         {
+            var id = c.Data.ID;
+            if (!ModelViewers.ContainsKey(id))
+            {
+                var f = new Form { Size = new System.Drawing.Size(480, 480), Text = "Initializing viewer..." };
+                f.FormClosed += delegate
+                {
+                    ModelViewers.Remove(id);
+                };
+                f.Show();
+                ModelViewer v = new ModelViewer(c, ref f) { Dock = DockStyle.Fill };
+                f.Controls.Add(v);
+                f.Text = "ModelViewer";
+                ModelViewers.Add(id, f);
+            }
+            else
+                ModelViewers[id].Select();
+        }
+        public void OpenModelViewer(SpecialModelController spec)
+        {
+            SectionController model_sec = GetItem<SectionController>(6).GetItem<SectionController>(6);
+
+            uint LODcount = spec.Data.K_Count;
+            int targetLOD = 3;
+            if (LODcount > 3)
+            {
+                targetLOD = 0;
+            }
+            else if (LODcount > 2)
+            {
+                targetLOD = 1;
+            }
+            else if (LODcount > 1)
+            {
+                targetLOD = 2;
+            }
+            ModelController c = model_sec.GetItem<ModelController>(spec.Data.LODModelIDs[targetLOD]);
+
             var id = c.Data.ID;
             if (!ModelViewers.ContainsKey(id))
             {
@@ -294,15 +382,19 @@ namespace TwinsaityEditor
         {
             if (rmViewer == null)
             {
-                Form f = new Form { Size = new System.Drawing.Size(480, 480), Text = "Initializing viewer..." };
+                Form f = new Form { Size = new System.Drawing.Size(800, 720), Text = "Initializing viewer..." };
                 f.FormClosed += delegate
                 {
                     rmViewer = null;
                 };
                 f.Show();
                 rmViewer = new RMViewer(this, ref f) { Dock = DockStyle.Fill };
+                if (DataAux != null)
+                {
+                    TopForm.AuxCont.rmViewer = rmViewer;
+                }
                 f.Controls.Add(rmViewer);
-                f.Text = "RMViewer";
+                f.Text = "Level Viewer";
             }
             else
                 rmViewer.ParentForm.Select();
@@ -312,7 +404,7 @@ namespace TwinsaityEditor
         {
             if (smViewer == null)
             {
-                Form f = new Form { Size = new System.Drawing.Size(480, 480), Text = "Initializing viewer..." };
+                Form f = new Form { Size = new System.Drawing.Size(854, 480), Text = "Initializing viewer..." };
                 f.FormClosed += delegate
                 {
                     smViewer = null;
@@ -336,6 +428,30 @@ namespace TwinsaityEditor
         {
             if (rmViewer != null)
                 rmViewer.LoadPositions();
+        }
+
+        public void RMViewer_LoadParticles()
+        {
+            if (rmViewer != null)
+                rmViewer.LoadParticles();
+        }
+
+        public void RMViewer_UpdateScenery()
+        {
+            if (rmViewer != null)
+                rmViewer.UpdateScenery();
+        }
+
+        public void RMViewer_UpdateLights()
+        {
+            if (rmViewer != null)
+                rmViewer.LoadLights();
+        }
+
+        public void RMViewer_CustomTeleport(float X, float Y, float Z)
+        {
+            if (rmViewer != null)
+                rmViewer.CustomTeleport(X,Y,Z);
         }
 
         public Pos RMViewer_GetPos(Pos pos_in)

@@ -9,7 +9,7 @@ using System.Drawing.Drawing2D;
 using System.IO;
 using SharpFont;
 
-namespace TwinsaityEditor.FontWrapper
+namespace TwinsanityEditor.FontWrapper
 {
     public class FontService
     {

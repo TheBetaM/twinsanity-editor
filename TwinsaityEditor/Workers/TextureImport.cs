@@ -6,7 +6,7 @@ using System.Windows.Forms;
 using Microsoft.WindowsAPICodePack.Dialogs;
 using Twinsanity;
 
-namespace TwinsaityEditor.Workers
+namespace TwinsanityEditor.Workers
 {
     public partial class TextureImport : Form
     {

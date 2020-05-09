@@ -98,6 +98,17 @@ namespace Twinsanity
                                         Records.Add(rec);
                                         break;
                                     }
+                                case 8:
+                                    {
+                                        ParticleData rec = new ParticleData() { ID = s_id };
+                                        var sk = reader.BaseStream.Position;
+                                        reader.BaseStream.Position = rec.Offset = s_off;
+                                        rec.Load(reader, s_size);
+                                        reader.BaseStream.Position = sk;
+                                        RecordIDs.Add(s_id, Records.Count);
+                                        Records.Add(rec);
+                                        break;
+                                    }
                                 default:
                                     {
                                         TwinsItem rec = new TwinsItem { ID = s_id };
@@ -150,6 +161,64 @@ namespace Twinsanity
                                         Records.Add(rec);
                                         break;
                                     }
+                                case 0:
+                                    {
+                                        SceneryData rec = new SceneryData { ID = s_id };
+                                        var sk = reader.BaseStream.Position;
+                                        reader.BaseStream.Position = rec.Offset = s_off;
+                                        rec.Load(reader, s_size);
+                                        reader.BaseStream.Position = sk;
+                                        RecordIDs.Add(s_id, Records.Count);
+                                        Records.Add(rec);
+                                        break;
+                                    }
+                                case 4:
+                                    {
+                                        DynamicSceneryData rec = new DynamicSceneryData { ID = s_id };
+                                        var sk = reader.BaseStream.Position;
+                                        reader.BaseStream.Position = rec.Offset = s_off;
+                                        rec.Load(reader, s_size);
+                                        reader.BaseStream.Position = sk;
+                                        RecordIDs.Add(s_id, Records.Count);
+                                        Records.Add(rec);
+                                        break;
+                                    }
+                                default:
+                                    {
+                                        TwinsItem rec = new TwinsItem { ID = s_id };
+                                        var sk = reader.BaseStream.Position;
+                                        reader.BaseStream.Position = rec.Offset = s_off;
+                                        rec.Load(reader, s_size);
+                                        reader.BaseStream.Position = sk;
+                                        RecordIDs.Add(s_id, Records.Count);
+                                        Records.Add(rec);
+                                        break;
+                                    }
+                            }
+                        }
+                        break;
+                    case FileType.BIN:
+                        {
+                            switch (s_id)
+                            {
+                                default:
+                                    {
+                                        TwinsItem rec = new TwinsItem { ID = s_id };
+                                        var sk = reader.BaseStream.Position;
+                                        reader.BaseStream.Position = rec.Offset = s_off;
+                                        rec.Load(reader, s_size);
+                                        reader.BaseStream.Position = sk;
+                                        RecordIDs.Add(s_id, Records.Count);
+                                        Records.Add(rec);
+                                        break;
+                                    }
+                            }
+                        }
+                        break;
+                    case FileType.DIR:
+                        {
+                            switch (s_id)
+                            {
                                 default:
                                     {
                                         TwinsItem rec = new TwinsItem { ID = s_id };
@@ -212,6 +281,6 @@ namespace Twinsanity
         }
 
         //NOTE: Do NOT use "First"
-        public enum FileType { First = SectionType.Last, RM2, SM2, DemoRM2, DemoSM2, RMX, SMX };
+        public enum FileType { First = SectionType.Last, RM2, SM2, DemoRM2, DemoSM2, RMX, SMX, PTL, BIN, DIR };
     }
 }

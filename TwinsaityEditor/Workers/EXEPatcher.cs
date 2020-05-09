@@ -2,7 +2,7 @@
 using System.Windows.Forms;
 using System.IO;
 
-namespace TwinsaityEditor
+namespace TwinsanityEditor
 {
     public partial class EXEPatcher : Form
     {

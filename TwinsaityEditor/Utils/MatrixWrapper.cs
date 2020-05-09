@@ -1,7 +1,7 @@
 ﻿using System;
 using OpenTK;
 
-namespace TwinsaityEditor.Utils
+namespace TwinsanityEditor.Utils
 {
     public static class MatrixWrapper
     {

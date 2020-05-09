@@ -1,4 +1,4 @@
-﻿namespace TwinsaityEditor
+﻿namespace TwinsanityEditor
 {
     partial class PositionEditor
     {

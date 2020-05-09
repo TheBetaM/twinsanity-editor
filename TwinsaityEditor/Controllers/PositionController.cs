@@ -1,12 +1,12 @@
 ﻿using Twinsanity;
 
-namespace TwinsaityEditor
+namespace TwinsanityEditor
 {
     public class PositionController : ItemController
     {
         public new Position Data { get; set; }
 
-        public PositionController(MainForm topform, Position item) : base (topform, item)
+        public PositionController(MainForm topform, Position item, FileController targetFile) : base(topform, item, targetFile)
         {
             Data = item;
             AddMenu("Open editor", Menu_OpenEditor);

@@ -1,12 +1,12 @@
 ﻿using Twinsanity;
 
-namespace TwinsaityEditor
+namespace TwinsanityEditor
 {
     public class GraphicsInfoController : ItemController
     {
         public new GraphicsInfo Data { get; set; }
 
-        public GraphicsInfoController(MainForm topform, GraphicsInfo item) : base(topform, item)
+        public GraphicsInfoController(MainForm topform, GraphicsInfo item, FileController targetFile) : base(topform, item, targetFile)
         {
             Data = item;
         }
@@ -34,7 +34,7 @@ namespace TwinsaityEditor
                 cur_pos++;
                 for (int i = 0; i < Data.ModelIDs.Length; i++)
                 {
-                    TextPrev[cur_pos] = $"Model #{ Data.ModelIDs[i].ID } ID: { Data.ModelIDs[i].ModelID }";
+                    TextPrev[cur_pos] = string.Format("Model #{0} ID: {1:X8}", Data.ModelIDs[i].ID, Data.ModelIDs[i].ModelID);
                     cur_pos++;
                 }
             }

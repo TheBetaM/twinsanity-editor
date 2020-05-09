@@ -6,7 +6,7 @@ using System.IO;
 using System.Windows.Forms;
 using Twinsanity;
 
-namespace TwinsaityEditor
+namespace TwinsanityEditor
 {
     public class MeshController : ItemController
     {
@@ -16,7 +16,7 @@ namespace TwinsaityEditor
         public uint[] Indices { get; set; }
         public bool IsLoaded { get; private set; }
 
-        public MeshController(MainForm topform, Mesh item) : base (topform, item)
+        public MeshController(MainForm topform, Mesh item, FileController targetFile) : base(topform, item, targetFile)
         {
             Data = item;
             AddMenu("Export to PLY", Menu_ExportPLY);
@@ -57,17 +57,20 @@ namespace TwinsaityEditor
             List<Vertex> vtx = new List<Vertex>();
             List<uint> idx = new List<uint>();
             int off = 0;
-            foreach (var s in Data.SubModels)
+            for (int s = 0; s < Data.SubModels.Count; s++)
             {
-                foreach (var g in s.Groups)
+                foreach (var g in Data.SubModels[s].Groups)
                 {
                     if (g.VertHead > 0 && g.VDataHead > 0 && g.VertexCount >= 3)
                     {
-                        vtx.Add(new Vertex(new Vector3(-g.Vertex[0].X, g.Vertex[0].Y, g.Vertex[0].Z), Color.FromArgb(g.VData[0].R, g.VData[0].G, g.VData[0].B)));
-                        vtx.Add(new Vertex(new Vector3(-g.Vertex[1].X, g.Vertex[1].Y, g.Vertex[1].Z), Color.FromArgb(g.VData[1].R, g.VData[1].G, g.VData[1].B)));
+                        Color color1 = Color.FromArgb(g.VData[0].R, g.VData[0].G, g.VData[0].B);
+                        Color color2 = Color.FromArgb(g.VData[1].R, g.VData[1].G, g.VData[1].B);
+                        vtx.Add(new Vertex(new Vector3(-g.Vertex[0].X, g.Vertex[0].Y, g.Vertex[0].Z), color1));
+                        vtx.Add(new Vertex(new Vector3(-g.Vertex[1].X, g.Vertex[1].Y, g.Vertex[1].Z), color2));
                         for (int i = 2; i < g.VertexCount; ++i)
                         {
-                            vtx.Add(new Vertex(new Vector3(-g.Vertex[i].X, g.Vertex[i].Y, g.Vertex[i].Z), Color.FromArgb(g.VData[i].R, g.VData[i].G, g.VData[i].B)));
+                            Color targetColor = Color.FromArgb(g.VData[i].R, g.VData[i].G, g.VData[i].B);
+                            vtx.Add(new Vertex(new Vector3(-g.Vertex[i].X, g.Vertex[i].Y, g.Vertex[i].Z), targetColor));
                             int v1 = off + i - 2 + (i & 1);
                             int v2 = off + i - 1 - (i & 1);
                             int v3 = off + i;

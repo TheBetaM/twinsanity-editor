@@ -2,13 +2,13 @@
 using System.Collections.Generic;
 using Twinsanity;
 
-namespace TwinsaityEditor
+namespace TwinsanityEditor
 {
     public class ObjectController : ItemController
     {
         public new GameObject Data { get; set; }
 
-        public ObjectController(MainForm topform, GameObject item) : base (topform, item)
+        public ObjectController(MainForm topform, GameObject item, FileController targetFile) : base(topform, item, targetFile)
         {
             Data = item;
         }

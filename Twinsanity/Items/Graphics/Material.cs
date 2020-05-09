@@ -37,7 +37,6 @@ namespace Twinsanity
             writer.Write(ValuesF[2]);
             writer.Write(ValuesF[3]);
             writer.Write(Remain);
-            //todo: write texture ID
         }
 
         public override void Load(BinaryReader reader, int size)

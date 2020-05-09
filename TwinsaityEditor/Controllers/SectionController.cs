@@ -3,18 +3,20 @@ using System.Collections.Generic;
 using System.Windows.Forms;
 using Microsoft.WindowsAPICodePack.Dialogs;
 using System.IO;
+using System;
 
-namespace TwinsaityEditor
+namespace TwinsanityEditor
 {
     public class SectionController : Controller
     {
         public TwinsSection Data { get; set; }
         public FileController MainFile { get; private set; }
 
-        public SectionController(MainForm topform, TwinsSection item) : base (topform)
+        public SectionController(MainForm topform, TwinsSection item, FileController targetFile) : base (topform)
         {
-            MainFile = TopForm.CurCont;
+            MainFile = targetFile;
             Data = item;
+            AddMenu("Add item from raw data file", Menu_AddFromFile);
             if (item.Type != SectionType.Texture && item.Type != SectionType.TextureX
                 && item.Type != SectionType.Material && item.Type != SectionType.Mesh
                 && item.Type != SectionType.MeshX && item.Type != SectionType.Model
@@ -75,7 +77,7 @@ namespace TwinsaityEditor
         public void AddItem(uint id, TwinsItem item)
         {
             Data.AddItem(id, item);
-            TopForm.GenTreeNode(item, this);
+            TopForm.GenTreeNode(item, this, MainFile);
             UpdateText();
             ((Controller)Node.Nodes[Data.RecordIDs[item.ID]].Tag).UpdateText();
         }
@@ -143,7 +145,7 @@ namespace TwinsaityEditor
                 SectionType type = SectionType.Null;
                 switch (i)
                 {
-                    case 0: type = SectionType.UnknownInstance; break;
+                    case 0: type = SectionType.InstanceTemplate; break;
                     case 1: type = SectionType.AIPosition; break;
                     case 2: type = SectionType.AIPath; break;
                     case 3: type = SectionType.Position; break;
@@ -204,7 +206,7 @@ namespace TwinsaityEditor
             foreach (var i in sdic)
             {
                 slist.Add(Data.Records[i.Value]);
-                TopForm.GenTreeNode(Data.Records[i.Value], this);
+                TopForm.GenTreeNode(Data.Records[i.Value], this, MainFile);
             }
             Data.Records = slist;
             Node.TreeView.EndUpdate();
@@ -221,7 +223,7 @@ namespace TwinsaityEditor
             foreach (var i in sdic)
             {
                 slist.Add(Data.Records[i.Value]);
-                TopForm.GenTreeNode(Data.Records[i.Value], this);
+                TopForm.GenTreeNode(Data.Records[i.Value], this, MainFile);
             }
             Data.Records = slist;
             Node.TreeView.EndUpdate();
@@ -244,7 +246,7 @@ namespace TwinsaityEditor
             {
                 Data.Records[i].ID = (uint)i;
                 Data.RecordIDs.Add((uint)i, i);
-                TopForm.GenTreeNode(Data.Records[i], this);
+                TopForm.GenTreeNode(Data.Records[i], this, MainFile);
             }
             Node.TreeView.EndUpdate();
         }
@@ -252,6 +254,64 @@ namespace TwinsaityEditor
         private void Menu_OpenEditor()
         {
             MainFile.OpenEditor(this);
+        }
+
+        private void Menu_AddFromFile()
+        {
+            OpenFileDialog ofd = new OpenFileDialog();
+            if (ofd.ShowDialog() == DialogResult.OK)
+            {
+                uint id = 0;
+                if (Data.Records.Count > 0)
+                {
+                    if (ofd.FileName.Contains("[ID ")) //terrible hack, but i'm too lazy to rework IDasker
+                    {
+                        int startPos = ofd.FileName.IndexOf("[ID ") + 4;
+                        string textID = ofd.FileName.Substring(startPos, ((ofd.FileName.Length - 1) - startPos));
+                        id = Convert.ToUInt32(textID, 16);
+                        if (Data.ContainsItem(id))
+                        {
+                            MessageBox.Show("Item of this ID already exists!");
+                            return;
+                        }
+                    }
+                    else
+                    {
+                        id = Data.Records[Data.Records.Count - 1].ID + 1;
+                    }
+                }
+                TwinsItem item = new TwinsItem() { ID = id } ;
+                
+                BinaryReader reader = new BinaryReader(new FileStream(ofd.FileName, FileMode.Open, FileAccess.Read));
+                if (item is Instance instance)
+                {
+                    MainFile.CloseEditor(Editors.Instance, (int)Data.Parent.Parent.ID);
+                    instance.Load(reader, (int)reader.BaseStream.Length);
+                }
+                else if (item is Position position)
+                {
+                    MainFile.CloseEditor(Editors.Position, (int)Data.Parent.Parent.ID);
+                    position.Load(reader, (int)reader.BaseStream.Length);
+                }
+                else if (item is Twinsanity.Path path)
+                {
+                    MainFile.CloseEditor(Editors.Path, (int)Data.Parent.Parent.ID);
+                    path.Load(reader, (int)reader.BaseStream.Length);
+                }
+                else if (item is Trigger trigger)
+                {
+                    MainFile.CloseEditor(Editors.Trigger, (int)Data.Parent.Parent.ID);
+                    trigger.Load(reader, (int)reader.BaseStream.Length);
+                }
+                else
+                    item.Load(reader, (int)reader.BaseStream.Length);
+                reader.Close();
+
+                Data.AddItem(id, item);
+                TopForm.GenTreeNode(item, this, MainFile);
+                UpdateText();
+                ((Controller)Node.Nodes[Data.RecordIDs[id]].Tag).UpdateText();
+            }
         }
 
         private void Menu_ExportAllPLY()

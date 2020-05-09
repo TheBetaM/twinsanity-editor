@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 
-namespace TwinsaityEditor.Utils
+namespace TwinsanityEditor.Utils
 {
     class DescendingComparer<T> : IComparer<T> where T : IComparable<T>
     {

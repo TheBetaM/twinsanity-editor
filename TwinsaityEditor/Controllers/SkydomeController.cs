@@ -1,12 +1,12 @@
 ﻿using Twinsanity;
 
-namespace TwinsaityEditor
+namespace TwinsanityEditor
 {
     public class SkydomeController : ItemController
     {
         public new Skydome Data { get; set; }
 
-        public SkydomeController(MainForm topform, Skydome item) : base (topform, item)
+        public SkydomeController(MainForm topform, Skydome item, FileController targetFile) : base(topform, item, targetFile)
         {
             Data = item;
             AddMenu("Open skydome viewer", Menu_OpenViewer);

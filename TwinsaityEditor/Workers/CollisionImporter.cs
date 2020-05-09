@@ -4,7 +4,7 @@ using Twinsanity;
 using System.IO;
 using System;
 
-namespace TwinsaityEditor
+namespace TwinsanityEditor
 {
     public partial class CollisionImporter : Form
     {

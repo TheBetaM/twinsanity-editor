@@ -1,12 +1,12 @@
 ﻿using Twinsanity;
 
-namespace TwinsaityEditor
+namespace TwinsanityEditor
 {
     public class AIPositionController : ItemController
     {
         public new AIPosition Data { get; set; }
 
-        public AIPositionController(MainForm topform, AIPosition item) : base (topform, item)
+        public AIPositionController(MainForm topform, AIPosition item, FileController targetFile) : base (topform, item, targetFile)
         {
             Data = item;
         }

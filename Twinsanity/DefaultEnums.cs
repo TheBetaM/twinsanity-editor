@@ -5,6 +5,38 @@ namespace Twinsanity
     {
         // These enums are valid for the vanilla game
 
+        public enum SurfaceTypes :uint
+        {
+            SURF_DEFAULT = 0,
+            SURF_GENERIC_SLIGHTLY_SLIPPY = 1,
+            SURF_GENERIC_MEDIUM_SLIPPY = 2,
+            SURF_LAVA = 3,
+            SURF_GENERIC_INSTANT_DEATH = 4,
+            SURF_FALL_THRU_DEATH = 5,
+            SURF_NORMAL_GRASS = 6,
+            SURF_SLIPPY_METAL = 7,
+            SURF_NORMAL_WOOD = 8,
+            SURF_NORMAL_METAL = 9,
+            SURF_NORMAL_SAND = 10,
+            SURF_NORMAL_MUD = 11,
+            SURF_NORMAL_WATER = 12,
+            SURF_NORMAL_ROCK = 13,
+            SURF_SLIPPY_ROCK = 14,
+            SURF_NORMAL_SNOW = 15,
+            SURF_STICKY_SNOW = 16,
+            SURF_ICE = 17,
+            SURF_GLASS_WALL = 18,
+            SURF_HACK_RAIL = 19,
+            SURF_CAMERA_BLOCKING = 20,
+            SURF_NORMAL_STONE_TILES = 21,
+            SURF_ICE_LOW_SLIPPY = 22,
+            SURF_DROWNING_PLANE = 23,
+            SURF_BLOCK_PLAYER = 24,
+            SURF_GENERIC_MEDIUM_SLIPPY_RIGID_ONLY = 25,
+            SURF_NONSOLID_ELECTRIC_DEATH = 26,
+            SURF_BLOCK_AI_ONLY = 27,
+        }
+
         public enum GameObjectScriptOrder
         {
             OnSpawn = 0,
@@ -746,6 +778,8 @@ namespace Twinsanity
             COM_EXIT_VEHICLE = 1107,
             HEAD_COM_GENERIC_PLATFORM_MOVE = 1108,
             COM_GENERIC_PLATFORM_MOVE = 1109,
+            HEAD_COM_COOP_CHECKPOINT_CRATE_OPEN = 1110,
+            COM_COOP_CHECKPOINT_CRATE_OPEN = 1111,
             COM_GENERIC_PLATFORM_FALL = 1113,
             HEAD_COM_EXTRA_LIFE_DEFAULT = 1114,
             COM_EXTRA_LIFE_DEFAULT = 1115,
@@ -3748,6 +3782,7 @@ namespace Twinsanity
             GLOBAL_CORTEX_CAMERABOT = 221,
             DOCAMOK_SPIKEY_STUMP = 244,
             CHECKPOINTCRATE = 266,
+            COOPCHECKPOINTCRATE2 = 267,
             LEVELCRATE = 268,
             MULTI_MANAGER1 = 274,
             TRIBESMAN_A = 279,

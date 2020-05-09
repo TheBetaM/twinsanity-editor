@@ -3,7 +3,7 @@
  */
 using System.Collections.Generic;
 
-namespace TwinsaityEditor.FontWrapper
+namespace TwinsanityEditor.FontWrapper
 {
     internal class FontFormat
     {

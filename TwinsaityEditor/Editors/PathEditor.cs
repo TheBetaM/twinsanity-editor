@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using Twinsanity;
 
-namespace TwinsaityEditor
+namespace TwinsanityEditor
 {
     public partial class PathEditor : Form
     {
@@ -138,7 +138,7 @@ namespace TwinsaityEditor
             }
             Path new_path = new Path { ID = id, Positions = new List<Pos>(), Params = new List<Path.PathParam>() };
             controller.Data.AddItem(id, new_path);
-            ((MainForm)Tag).GenTreeNode(new_path, controller);
+            ((MainForm)Tag).GenTreeNode(new_path, controller, controller.MainFile);
             path = new_path;
             listBox1.Items.Add($"ID {path.ID}");
             controller.UpdateTextBox();

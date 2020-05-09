@@ -1,12 +1,12 @@
 ﻿using Twinsanity;
 
-namespace TwinsaityEditor
+namespace TwinsanityEditor
 {
     public class PathController : ItemController
     {
         public new Path Data { get; set; }
 
-        public PathController(MainForm topform, Path item) : base (topform, item)
+        public PathController(MainForm topform, Path item, FileController targetFile) : base(topform, item, targetFile)
         {
             Data = item;
             AddMenu("Open editor", Menu_OpenEditor);

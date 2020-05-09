@@ -2,7 +2,7 @@
 using System.Windows.Forms;
 using System;
 
-namespace TwinsaityEditor
+namespace TwinsanityEditor
 {
     public static class ControlExt
     {

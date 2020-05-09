@@ -4,7 +4,7 @@ using System.Media;
 using System.Windows.Forms;
 using Twinsanity;
 
-namespace TwinsaityEditor
+namespace TwinsanityEditor
 {
     public class SEController : ItemController
     {
@@ -15,7 +15,7 @@ namespace TwinsaityEditor
 
         private static SoundPlayer player = new SoundPlayer();
 
-        public SEController(MainForm topform, SoundEffect item) : base (topform, item)
+        public SEController(MainForm topform, SoundEffect item, FileController targetFile) : base(topform, item, targetFile)
         {
             Data = item;
             LoadSoundData();

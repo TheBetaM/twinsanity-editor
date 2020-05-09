@@ -3,7 +3,7 @@ using System.IO;
 using System.Windows.Forms;
 using Twinsanity;
 
-namespace TwinsaityEditor
+namespace TwinsanityEditor
 {
     public class ColDataController : ItemController
     {
@@ -11,7 +11,7 @@ namespace TwinsaityEditor
 
         public new ColData Data { get; set; }
 
-        public ColDataController(MainForm topform, ColData item) : base (topform, item)
+        public ColDataController(MainForm topform, ColData item, FileController targetFile) : base(topform, item, targetFile)
         {
             Data = item;
             AddMenu("Open RMViewer", Menu_OpenRMViewer);
