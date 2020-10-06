@@ -1484,151 +1484,173 @@ namespace TwinsanityEditor
 
         public void LoadScenery(FileController file, bool isLinkedScenery, Matrix4 ChunkMatrix, int LinkID, bool isUpdate)
         {
-            float min_x = float.MaxValue, min_y = float.MaxValue, min_z = float.MaxValue, max_x = float.MinValue, max_y = float.MinValue, max_z = float.MinValue;
             SceneryDataController scenery_sec = file.GetItem<SceneryDataController>(0);
-            SectionController tex_sec = file.GetItem<SectionController>(6).GetItem<SectionController>(0);
-            SectionController mat_sec = file.GetItem<SectionController>(6).GetItem<SectionController>(1);
-            SectionController mesh_sec = file.GetItem<SectionController>(6).GetItem<SectionController>(2);
-            SectionController model_sec = file.GetItem<SectionController>(6).GetItem<SectionController>(6);
-            SectionController special_sec = file.GetItem<SectionController>(6).GetItem<SectionController>(7);
 
-            if (scenery_sec.Data.sceneryModels.Count <= 0)
+            if (scenery_sec.Data.SceneryRoot == null)
             {
                 return;
             }
-            for (int s = 0; s < scenery_sec.Data.sceneryModels.Count; s++)
+
+            LoadSceneryStruct(scenery_sec.Data.SceneryRoot, file, isLinkedScenery, ChunkMatrix, LinkID, isUpdate);
+        }
+
+        public void LoadSceneryStruct(SceneryData.SceneryStruct ptr, FileController file, bool isLinkedScenery, Matrix4 ChunkMatrix, int LinkID, bool isUpdate)
+        {
+            LoadSceneryModel(ptr.Model, file, isLinkedScenery, ChunkMatrix, LinkID, isUpdate);
+            for (int i = 0; i < ptr.Links.Length; i++)
             {
-                for (int m = 0; m < scenery_sec.Data.sceneryModels[s].Models.Count; m++)
+                if (ptr.Links[i] is SceneryData.SceneryModelStruct)
                 {
-                    MeshController mesh;
-                    MaterialController[] mat;
-                    TextureController[] tex;
-                    uint modelID = 0;
-                    if (!scenery_sec.Data.sceneryModels[s].Models[m].isSpecial)
+                    LoadSceneryModel((SceneryData.SceneryModelStruct)ptr.Links[i], file, isLinkedScenery, ChunkMatrix, LinkID, isUpdate);
+                }
+                else if (ptr.Links[i] is SceneryData.SceneryStruct)
+                {
+                    LoadSceneryStruct((SceneryData.SceneryStruct)ptr.Links[i], file, isLinkedScenery, ChunkMatrix, LinkID, isUpdate);
+                }
+            }
+        }
+
+        public void LoadSceneryModel(SceneryData.SceneryModelStruct ptr, FileController file, bool isLinkedScenery, Matrix4 ChunkMatrix, int LinkID, bool isUpdate)
+        {
+            float min_x = float.MaxValue, min_y = float.MaxValue, min_z = float.MaxValue, max_x = float.MinValue, max_y = float.MinValue, max_z = float.MinValue;
+            SceneryDataController scenery_sec = file.GetItem<SceneryDataController>(0);
+            SectionController graphics_sec = file.GetItem<SectionController>(6);
+            SectionController tex_sec = graphics_sec.GetItem<SectionController>(0);
+            SectionController mat_sec = graphics_sec.GetItem<SectionController>(1);
+            SectionController mesh_sec = graphics_sec.GetItem<SectionController>(2);
+            SectionController model_sec = graphics_sec.GetItem<SectionController>(6);
+            SectionController special_sec = graphics_sec.GetItem<SectionController>(7);
+
+            for (int m = 0; m < ptr.Models.Count; m++)
+            {
+                MeshController mesh;
+                MaterialController[] mat;
+                TextureController[] tex;
+                uint modelID = 0;
+                if (!ptr.Models[m].isSpecial)
+                {
+                    modelID = ptr.Models[m].ModelID;
+                }
+                else
+                {
+                    uint LODcount = special_sec.Data.GetItem<SpecialModel>(ptr.Models[m].ModelID).K_Count;
+                    int targetLOD = 3;
+                    if (LODcount > 3)
                     {
-                        modelID = scenery_sec.Data.sceneryModels[s].Models[m].ModelID;
+                        targetLOD = 0;
+                    }
+                    else if (LODcount > 2)
+                    {
+                        targetLOD = 1;
+                    }
+                    else if (LODcount > 1)
+                    {
+                        targetLOD = 2;
+                    }
+                    modelID = special_sec.Data.GetItem<SpecialModel>(ptr.Models[m].ModelID).LODModelIDs[targetLOD];
+                }
+                mesh = mesh_sec.GetItem<MeshController>(model_sec.GetItem<ModelController>(modelID).Data.MeshID);
+
+                int matCount = model_sec.GetItem<ModelController>(modelID).Data.MaterialIDs.Length;
+                mat = new MaterialController[matCount];
+                tex = new TextureController[matCount];
+
+                for (int t = 0; t < matCount; t++)
+                {
+                    mat[t] = mat_sec.GetItem<MaterialController>(model_sec.GetItem<ModelController>(modelID).Data.MaterialIDs[t]);
+                    if (mat_sec.GetItem<MaterialController>(mat[t].Data.ID).Data.Tex != 0)
+                    {
+                        tex[t] = tex_sec.GetItem<TextureController>(mat_sec.GetItem<MaterialController>(mat[t].Data.ID).Data.Tex);
                     }
                     else
                     {
-                        uint LODcount = special_sec.Data.GetItem<SpecialModel>(scenery_sec.Data.sceneryModels[s].Models[m].ModelID).K_Count;
-                        int targetLOD = 3;
-                        if (LODcount > 3)
-                        {
-                            targetLOD = 0;
-                        }
-                        else if (LODcount > 2)
-                        {
-                            targetLOD = 1;
-                        }
-                        else if (LODcount > 1)
-                        {
-                            targetLOD = 2;
-                        }
-                        modelID = special_sec.Data.GetItem<SpecialModel>(scenery_sec.Data.sceneryModels[s].Models[m].ModelID).LODModelIDs[targetLOD];
+                        tex[t] = null;
                     }
-                    mesh = mesh_sec.GetItem<MeshController>(model_sec.GetItem<ModelController>(modelID).Data.MeshID);
+                }
+                //textures loaded into tex[]... but what next?
 
-                    int matCount = model_sec.GetItem<ModelController>(modelID).Data.MaterialIDs.Length;
-                    mat = new MaterialController[matCount];
-                    tex = new TextureController[matCount];
-                    
-                    for (int t = 0; t < matCount; t++)
-                    {
-                        mat[t] = mat_sec.GetItem<MaterialController>(model_sec.GetItem<ModelController>(modelID).Data.MaterialIDs[t]);
-                        if (mat_sec.GetItem<MaterialController>(mat[t].Data.ID).Data.Tex != 0)
-                        {
-                            tex[t] = tex_sec.GetItem<TextureController>(mat_sec.GetItem<MaterialController>(mat[t].Data.ID).Data.Tex);
-                        }
-                        else
-                        {
-                            tex[t] = null;
-                        } 
-                    }
-                    //textures loaded into tex[]... but what next?
+                mesh.LoadMeshData();
 
-                    mesh.LoadMeshData();
+                Matrix4 modelMatrix = Matrix4.Identity;
 
-                    Matrix4 modelMatrix = Matrix4.Identity;
+                // closest: -M11, -M21, -M31, -X
 
-                    // closest: -M11, -M21, -M31, -X
+                // Rotation
+                modelMatrix.M11 = -ptr.Models[m].ModelMatrix[0].X;
+                modelMatrix.M12 = ptr.Models[m].ModelMatrix[1].X;
+                modelMatrix.M13 = ptr.Models[m].ModelMatrix[2].X;
 
-                    // Rotation
-                    modelMatrix.M11 = -scenery_sec.Data.sceneryModels[s].Models[m].ModelMatrix[0].X;
-                    modelMatrix.M12 = scenery_sec.Data.sceneryModels[s].Models[m].ModelMatrix[1].X;
-                    modelMatrix.M13 = scenery_sec.Data.sceneryModels[s].Models[m].ModelMatrix[2].X;
+                modelMatrix.M21 = -ptr.Models[m].ModelMatrix[0].Y;
+                modelMatrix.M22 = ptr.Models[m].ModelMatrix[1].Y;
+                modelMatrix.M23 = ptr.Models[m].ModelMatrix[2].Y;
 
-                    modelMatrix.M21 = -scenery_sec.Data.sceneryModels[s].Models[m].ModelMatrix[0].Y;
-                    modelMatrix.M22 = scenery_sec.Data.sceneryModels[s].Models[m].ModelMatrix[1].Y;
-                    modelMatrix.M23 = scenery_sec.Data.sceneryModels[s].Models[m].ModelMatrix[2].Y;
+                modelMatrix.M31 = -ptr.Models[m].ModelMatrix[0].Z;
+                modelMatrix.M32 = ptr.Models[m].ModelMatrix[1].Z;
+                modelMatrix.M33 = ptr.Models[m].ModelMatrix[2].Z;
 
-                    modelMatrix.M31 = -scenery_sec.Data.sceneryModels[s].Models[m].ModelMatrix[0].Z;
-                    modelMatrix.M32 = scenery_sec.Data.sceneryModels[s].Models[m].ModelMatrix[1].Z;
-                    modelMatrix.M33 = scenery_sec.Data.sceneryModels[s].Models[m].ModelMatrix[2].Z;
+                modelMatrix.M14 = ptr.Models[m].ModelMatrix[0].W;
+                modelMatrix.M24 = ptr.Models[m].ModelMatrix[1].W;
+                modelMatrix.M34 = ptr.Models[m].ModelMatrix[2].W;
 
-                    modelMatrix.M14 = scenery_sec.Data.sceneryModels[s].Models[m].ModelMatrix[0].W;
-                    modelMatrix.M24 = scenery_sec.Data.sceneryModels[s].Models[m].ModelMatrix[1].W;
-                    modelMatrix.M34 = scenery_sec.Data.sceneryModels[s].Models[m].ModelMatrix[2].W;
+                // Position
+                modelMatrix.M41 = ptr.Models[m].ModelMatrix[3].X;
+                modelMatrix.M42 = ptr.Models[m].ModelMatrix[3].Y;
+                modelMatrix.M43 = ptr.Models[m].ModelMatrix[3].Z;
+                modelMatrix.M44 = ptr.Models[m].ModelMatrix[3].W;
 
-                    // Position
-                    modelMatrix.M41 = scenery_sec.Data.sceneryModels[s].Models[m].ModelMatrix[3].X;
-                    modelMatrix.M42 = scenery_sec.Data.sceneryModels[s].Models[m].ModelMatrix[3].Y;
-                    modelMatrix.M43 = scenery_sec.Data.sceneryModels[s].Models[m].ModelMatrix[3].Z;
-                    modelMatrix.M44 = scenery_sec.Data.sceneryModels[s].Models[m].ModelMatrix[3].W;
+                modelMatrix *= Matrix4.CreateScale(-1, 1, 1);
 
-                    modelMatrix *= Matrix4.CreateScale(-1, 1, 1);
+                Vertex[] vbuffer = new Vertex[mesh.Vertices.Length];
 
-                    Vertex[] vbuffer = new Vertex[mesh.Vertices.Length];
-
-                    for (int v = 0; v < mesh.Vertices.Length; v++)
-                    {
-                        vbuffer[v] = mesh.Vertices[v];
-                        Vector4 vertexPos = new Vector4(mesh.Vertices[v].Pos.X, mesh.Vertices[v].Pos.Y, mesh.Vertices[v].Pos.Z, 1);
-                        vertexPos *= modelMatrix;
-                        if (isLinkedScenery)
-                        {
-                            vertexPos *= ChunkMatrix;
-                        }
-                        mesh.Vertices[v].Pos = new Vector3(vertexPos.X, vertexPos.Y, vertexPos.Z);
-                    }
-
-                    foreach (var v in mesh.Vertices)
-                    {
-                        min_x = Math.Min(min_x, v.Pos.X);
-                        min_y = Math.Min(min_y, v.Pos.Y);
-                        min_z = Math.Min(min_z, v.Pos.Z);
-                        max_x = Math.Max(max_x, v.Pos.X);
-                        max_y = Math.Max(max_y, v.Pos.Y);
-                        max_z = Math.Max(max_z, v.Pos.Z);
-                    }
-
-                    int vtx_id = reserved_layers + static_layers;
-                    if (isUpdate)
-                    {
-                        vtx_id = scenery_layer + scenery_starting_layer;
-                    }
-
-                    vtx[vtx_id] = new VertexBufferData();
-                    vtx[vtx_id].Vtx = mesh.Vertices;
-                    vtx[vtx_id].VtxInd = mesh.Indices;
+                for (int v = 0; v < mesh.Vertices.Length; v++)
+                {
+                    vbuffer[v] = mesh.Vertices[v];
+                    Vector4 vertexPos = new Vector4(mesh.Vertices[v].Pos.X, mesh.Vertices[v].Pos.Y, mesh.Vertices[v].Pos.Z, 1);
+                    vertexPos *= modelMatrix;
                     if (isLinkedScenery)
                     {
-                        vtx[vtx_id].Type = VertexBufferData.BufferType.ExtraScenery;
-                        vtx[vtx_id].LinkID = LinkID;
+                        vertexPos *= ChunkMatrix;
                     }
-                    else
-                    {
-                        vtx[vtx_id].Type = VertexBufferData.BufferType.Scenery;
-                    }
-                    mesh.Vertices = vbuffer;
-                    UpdateVBO(vtx_id);
-                    if (!isUpdate)
-                    {
-                        static_layers++;
-                    }
-                    else
-                    {
-                        scenery_layer++;
-                    }
+                    mesh.Vertices[v].Pos = new Vector3(vertexPos.X, vertexPos.Y, vertexPos.Z);
+                }
+
+                foreach (var v in mesh.Vertices)
+                {
+                    min_x = Math.Min(min_x, v.Pos.X);
+                    min_y = Math.Min(min_y, v.Pos.Y);
+                    min_z = Math.Min(min_z, v.Pos.Z);
+                    max_x = Math.Max(max_x, v.Pos.X);
+                    max_y = Math.Max(max_y, v.Pos.Y);
+                    max_z = Math.Max(max_z, v.Pos.Z);
+                }
+
+                int vtx_id = reserved_layers + static_layers;
+                if (isUpdate)
+                {
+                    vtx_id = scenery_layer + scenery_starting_layer;
+                }
+
+                vtx[vtx_id] = new VertexBufferData();
+                vtx[vtx_id].Vtx = mesh.Vertices;
+                vtx[vtx_id].VtxInd = mesh.Indices;
+                if (isLinkedScenery)
+                {
+                    vtx[vtx_id].Type = VertexBufferData.BufferType.ExtraScenery;
+                    vtx[vtx_id].LinkID = LinkID;
+                }
+                else
+                {
+                    vtx[vtx_id].Type = VertexBufferData.BufferType.Scenery;
+                }
+                mesh.Vertices = vbuffer;
+                UpdateVBO(vtx_id);
+                if (!isUpdate)
+                {
+                    static_layers++;
+                }
+                else
+                {
+                    scenery_layer++;
                 }
             }
 
@@ -1647,15 +1669,12 @@ namespace TwinsanityEditor
             {
                 return;
             }
-            if (scenery_sec.Data.ModelCount <= 0)
+            
+            if (scenery_sec.Data.Models.Count <= 0)
             {
                 return;
             }
-            if (scenery_sec.Data.Models.Length <= 0)
-            {
-                return;
-            }
-            for (int s = 0; s < scenery_sec.Data.Models.Length; s++)
+            for (int s = 0; s < scenery_sec.Data.Models.Count; s++)
             {
                 MeshController mesh = mesh_sec.GetItem<MeshController>(model_sec.GetItem<ModelController>(scenery_sec.Data.Models[s].ModelID).Data.MeshID);
                 mesh.LoadMeshData();
@@ -1710,6 +1729,7 @@ namespace TwinsanityEditor
                 UpdateVBO(reserved_layers + static_layers);
                 static_layers++;
             }
+            
 
             zFar = Math.Max(zFar, Math.Max(max_x - min_x, Math.Max(max_y - min_y, max_z - min_z)));
         }

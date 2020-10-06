@@ -10,7 +10,7 @@ namespace TwinsanityEditor
     {
         private const string angleFormat = "{0:0.000}º";
         private SceneryDataController controller;
-        private SceneryData.SceneryModel ins;
+        private SceneryData.ScenerySubModel ins;
         private SceneryData.LightAmbient li_am;
         private SceneryData.LightDirectional li_di;
         private SceneryData.LightPoint li_po;
@@ -19,11 +19,10 @@ namespace TwinsanityEditor
         private enum ScenTabSel
         {
             Scenery = 0,
-            Submodels = 1,
-            LightsAmbient = 2,
-            LightsDirectional = 3,
-            LightsPoint = 4,
-            LightsNegative = 5,
+            LightsAmbient = 1,
+            LightsDirectional = 2,
+            LightsPoint = 3,
+            LightsNegative = 4,
         }
         
         private FileController File { get; set; }
@@ -38,7 +37,6 @@ namespace TwinsanityEditor
             InitializeComponent();
             Text = $"Scenery Data Editor";
             PopulateList();
-            comboBox1.TextChanged += comboBox1_TextChanged;
             tabControl1.SelectedIndexChanged += tabControl1_SelectedIndexChanged;
             FormClosed += SceneryEditor_FormClosed;
         }
@@ -50,24 +48,13 @@ namespace TwinsanityEditor
 
         private void PopulateList()
         {
-            listBox1.BeginUpdate();
-            listBox1.Items.Clear();
-            for (int i = 0; i < controller.Data.sceneryModels.Count; i++)
-            {
-                for (int d = 0; d < controller.Data.sceneryModels[i].Models.Count; d++)
-                {
-                    listBox1.Items.Add($"Model {i} Submodel {d}");
-                }
-            }
-            listBox1.EndUpdate();
+            SceneryTreeView.BeginUpdate();
+            SceneryTreeView.Nodes.Clear();
 
-            listBox2.BeginUpdate();
-            listBox2.Items.Clear();
-            for (int d = 0; d < controller.Data.sceneryModels[0].Models.Count; d++)
-            {
-                listBox2.Items.Add($"Submodel {d}");
-            }
-            listBox2.EndUpdate();
+            AddSceneryNode(controller.Data.SceneryRoot, null, SceneryTreeView, null);
+
+            SceneryTreeView.ExpandAll();
+            SceneryTreeView.EndUpdate();
 
             listBox3.BeginUpdate();
             listBox3.Items.Clear();
@@ -100,40 +87,66 @@ namespace TwinsanityEditor
                 listBox6.Items.Add($"Negative Light {d}");
             }
             listBox6.EndUpdate();
-
-            comboBox1.Items.Clear();
             
+        }
+
+        private void AddSceneryNode(SceneryData.SceneryStruct ptr, TreeNode p, System.Windows.Forms.TreeView t, int? linkID)
+        {
+            TreeNode parent;
+            string add = "";
+            if (linkID != null)
+            {
+                add = "Link " + linkID.ToString() + ": ";
+            }
+            if (p == null)
+            {
+                parent = t.Nodes.Add(add + "Scenery");
+            }
+            else
+            {
+                parent = p.Nodes.Add(add + "Scenery");
+            }
+            parent.Tag = ptr;
+            AddSceneryModelNode(ptr.Model, parent, null);
+
+            for (int i = 0; i < ptr.Links.Length; i++)
+            {
+                if (ptr.Links[i] is SceneryData.SceneryStruct)
+                {
+                    AddSceneryNode((SceneryData.SceneryStruct)ptr.Links[i], parent, t, i);
+                }
+                else if (ptr.Links[i] is SceneryData.SceneryModelStruct)
+                {
+                    AddSceneryModelNode((SceneryData.SceneryModelStruct)ptr.Links[i], parent, i);
+                }
+                else
+                {
+                    // add empty node?
+                }
+            }
+        }
+
+        private void AddSceneryModelNode(SceneryData.SceneryModelStruct ptr, TreeNode parent, int? linkID)
+        {
+            string add = "";
+            if (linkID != null)
+            {
+                add = "Link " + linkID.ToString() + ": ";
+            }
+            TreeNode model = parent.Nodes.Add(add + "Model");
+            model.Tag = ptr;
+            for (int i = 0; i < ptr.Models.Count; i++)
+            {
+                TreeNode m = model.Nodes.Add("Submodel " + i);
+                m.Tag = ptr.Models[i];
+            }
         }
 
         private void listBox1_SelectedIndexChanged(object sender, System.EventArgs e)
         {
-            if (listBox1.SelectedIndex == -1) return;
 
             this.SuspendDrawing();
 
-            int target_id = 0;
-            int target_scenery = 0;
-            int target_model = 0;
-            for (int i = 0; i < controller.Data.sceneryModels.Count; i++)
-            {
-                for (int d = 0; d < controller.Data.sceneryModels[i].Models.Count; d++)
-                {
-                    if (target_id == listBox1.SelectedIndex)
-                    {
-                        target_scenery = i;
-                        target_model = d;
-                        break;
-                    }
-                    else
-                    {
-                        target_id++;
-                    }
-                    
-                }
-                target_id++;
-            }
-
-            ins = controller.Data.sceneryModels[target_scenery].Models[target_model];
             File.RMViewer_CustomTeleport(ins.ModelMatrix[3].X, ins.ModelMatrix[3].Y, ins.ModelMatrix[3].Z);
             tabControl1.Enabled = true;
             tabControl1.Tag = 0x00;
@@ -166,21 +179,11 @@ namespace TwinsanityEditor
 
         private void UpdateTab1()
         {
-            comboBox1.Text = "";
 
             ScenTabSel SelType = (ScenTabSel)tabControl2.SelectedIndex;
 
             if (SelType == ScenTabSel.Scenery)
             {
-                numericUpDown12.Value = listBox1.SelectedIndex;
-                numericUpDown2.Value = (decimal)ins.ModelMatrix[3].X;
-                numericUpDown3.Value = (decimal)ins.ModelMatrix[3].Y;
-                numericUpDown4.Value = (decimal)ins.ModelMatrix[3].Z;
-                numericUpDown5.Value = (decimal)ins.ModelMatrix[3].W;
-            }
-            else if (SelType == ScenTabSel.Submodels)
-            {
-                numericUpDown12.Value = listBox2.SelectedIndex;
                 numericUpDown2.Value = (decimal)ins.ModelMatrix[3].X;
                 numericUpDown3.Value = (decimal)ins.ModelMatrix[3].Y;
                 numericUpDown4.Value = (decimal)ins.ModelMatrix[3].Z;
@@ -188,7 +191,6 @@ namespace TwinsanityEditor
             }
             else if (SelType == ScenTabSel.LightsAmbient)
             {
-                numericUpDown12.Value = listBox3.SelectedIndex;
                 numericUpDown2.Value = (decimal)li_am.Position.X;
                 numericUpDown3.Value = (decimal)li_am.Position.Y;
                 numericUpDown4.Value = (decimal)li_am.Position.Z;
@@ -196,7 +198,6 @@ namespace TwinsanityEditor
             }
             else if (SelType == ScenTabSel.LightsDirectional)
             {
-                numericUpDown12.Value = listBox4.SelectedIndex;
                 numericUpDown2.Value = (decimal)li_di.Position.X;
                 numericUpDown3.Value = (decimal)li_di.Position.Y;
                 numericUpDown4.Value = (decimal)li_di.Position.Z;
@@ -204,7 +205,6 @@ namespace TwinsanityEditor
             }
             else if (SelType == ScenTabSel.LightsPoint)
             {
-                numericUpDown12.Value = listBox5.SelectedIndex;
                 numericUpDown2.Value = (decimal)li_po.Position.X;
                 numericUpDown3.Value = (decimal)li_po.Position.Y;
                 numericUpDown4.Value = (decimal)li_po.Position.Z;
@@ -212,14 +212,12 @@ namespace TwinsanityEditor
             }
             else if (SelType == ScenTabSel.LightsNegative)
             {
-                numericUpDown12.Value = listBox6.SelectedIndex;
                 numericUpDown2.Value = (decimal)li_ne.Position.X;
                 numericUpDown3.Value = (decimal)li_ne.Position.Y;
                 numericUpDown4.Value = (decimal)li_ne.Position.Z;
                 numericUpDown5.Value = (decimal)li_ne.Position.W;
             }
-            
-            textBox1.Text = "";
+
             tabControl1.Tag = (int)tabControl1.Tag | 0x01;
             GetXRot(true, true); GetYRot(true, true); GetZRot(true, true);
         }
@@ -228,7 +226,7 @@ namespace TwinsanityEditor
         {
             ScenTabSel SelType = (ScenTabSel)tabControl2.SelectedIndex;
 
-            if (SelType == ScenTabSel.Scenery || SelType == ScenTabSel.Submodels)
+            if (SelType == ScenTabSel.Scenery)
             {
 
             }
@@ -238,15 +236,15 @@ namespace TwinsanityEditor
                 numericUpDown11_colorG.Value = (decimal)li_am.Color_G;
                 numericUpDown10_colorB.Value = (decimal)li_am.Color_B;
                 numericUpDown20_radius.Value = (decimal)li_am.Radius;
-                numericUpDown9_colorF.Value = (decimal)li_am.UnkFloat;
-                numericUpDown21_v1x.Value = (decimal)li_am.Vectors[0].X;
-                numericUpDown19_v1y.Value = (decimal)li_am.Vectors[0].Y;
-                numericUpDown15_v1z.Value = (decimal)li_am.Vectors[0].Z;
-                numericUpDown14_v1w.Value = (decimal)li_am.Vectors[0].W;
-                numericUpDown26_v2x.Value = (decimal)li_am.Vectors[1].X;
-                numericUpDown25_v2y.Value = (decimal)li_am.Vectors[1].Y;
-                numericUpDown24_v2z.Value = (decimal)li_am.Vectors[1].Z;
-                numericUpDown23_v2w.Value = (decimal)li_am.Vectors[1].W;
+                numericUpDown9_colorF.Value = (decimal)li_am.Color_Unk;
+                numericUpDown21_v1x.Value = (decimal)li_am.Vector1.X;
+                numericUpDown19_v1y.Value = (decimal)li_am.Vector1.Y;
+                numericUpDown15_v1z.Value = (decimal)li_am.Vector1.Z;
+                numericUpDown14_v1w.Value = (decimal)li_am.Vector1.W;
+                numericUpDown26_v2x.Value = (decimal)li_am.Vector2.X;
+                numericUpDown25_v2y.Value = (decimal)li_am.Vector2.Y;
+                numericUpDown24_v2z.Value = (decimal)li_am.Vector2.Z;
+                numericUpDown23_v2w.Value = (decimal)li_am.Vector2.W;
                 numericUpDown30_v3x.Value = 0;
                 numericUpDown29_v3y.Value = 0;
                 numericUpDown28_v3z.Value = 0;
@@ -269,19 +267,19 @@ namespace TwinsanityEditor
                 numericUpDown11_colorG.Value = (decimal)li_di.Color_G;
                 numericUpDown10_colorB.Value = (decimal)li_di.Color_B;
                 numericUpDown20_radius.Value = (decimal)li_di.Radius;
-                numericUpDown9_colorF.Value = (decimal)li_di.UnkFloat;
-                numericUpDown21_v1x.Value = (decimal)li_di.Vectors[0].X;
-                numericUpDown19_v1y.Value = (decimal)li_di.Vectors[0].Y;
-                numericUpDown15_v1z.Value = (decimal)li_di.Vectors[0].Z;
-                numericUpDown14_v1w.Value = (decimal)li_di.Vectors[0].W;
-                numericUpDown26_v2x.Value = (decimal)li_di.Vectors[1].X;
-                numericUpDown25_v2y.Value = (decimal)li_di.Vectors[1].Y;
-                numericUpDown24_v2z.Value = (decimal)li_di.Vectors[1].Z;
-                numericUpDown23_v2w.Value = (decimal)li_di.Vectors[1].W;
-                numericUpDown30_v3x.Value = (decimal)li_di.Vectors[2].X;
-                numericUpDown29_v3y.Value = (decimal)li_di.Vectors[2].Y;
-                numericUpDown28_v3z.Value = (decimal)li_di.Vectors[2].Z;
-                numericUpDown27_v3w.Value = (decimal)li_di.Vectors[2].W;
+                numericUpDown9_colorF.Value = (decimal)li_di.Color_Unk;
+                numericUpDown21_v1x.Value = (decimal)li_di.Vector1.X;
+                numericUpDown19_v1y.Value = (decimal)li_di.Vector1.Y;
+                numericUpDown15_v1z.Value = (decimal)li_di.Vector1.Z;
+                numericUpDown14_v1w.Value = (decimal)li_di.Vector1.W;
+                numericUpDown26_v2x.Value = (decimal)li_di.Vector2.X;
+                numericUpDown25_v2y.Value = (decimal)li_di.Vector2.Y;
+                numericUpDown24_v2z.Value = (decimal)li_di.Vector2.Z;
+                numericUpDown23_v2w.Value = (decimal)li_di.Vector2.W;
+                numericUpDown30_v3x.Value = (decimal)li_di.Vector3.X;
+                numericUpDown29_v3y.Value = (decimal)li_di.Vector3.Y;
+                numericUpDown28_v3z.Value = (decimal)li_di.Vector3.Z;
+                numericUpDown27_v3w.Value = (decimal)li_di.Vector3.W;
                 numericUpDown33_nefloats_1.Value = 0;
                 numericUpDown32_nefloats_2.Value = 0;
                 numericUpDown31_nefloats_3.Value = 0;
@@ -291,8 +289,8 @@ namespace TwinsanityEditor
                 textBox3_flag2.Text = Convert.ToString(li_di.Flags[1], 16);
                 textBox4_flag3.Text = Convert.ToString(li_di.Flags[2], 16);
                 textBox5_flag4.Text = Convert.ToString(li_di.Flags[3], 16);
-                textBox9_flag2_1.Text = Convert.ToString(li_di.Flags2[0], 16);
-                textBox8_flag2_2.Text = Convert.ToString(li_di.Flags2[1], 16);
+                //textBox9_flag2_1.Text = Convert.ToString(li_di.Flags2[0], 16);
+                //textBox8_flag2_2.Text = Convert.ToString(li_di.Flags2[1], 16);
             }
             else if (SelType == ScenTabSel.LightsPoint)
             {
@@ -300,15 +298,15 @@ namespace TwinsanityEditor
                 numericUpDown11_colorG.Value = (decimal)li_po.Color_G;
                 numericUpDown10_colorB.Value = (decimal)li_po.Color_B;
                 numericUpDown20_radius.Value = (decimal)li_po.Radius;
-                numericUpDown9_colorF.Value = (decimal)li_po.UnkFloat;
-                numericUpDown21_v1x.Value = (decimal)li_po.Vectors[0].X;
-                numericUpDown19_v1y.Value = (decimal)li_po.Vectors[0].Y;
-                numericUpDown15_v1z.Value = (decimal)li_po.Vectors[0].Z;
-                numericUpDown14_v1w.Value = (decimal)li_po.Vectors[0].W;
-                numericUpDown26_v2x.Value = (decimal)li_po.Vectors[1].X;
-                numericUpDown25_v2y.Value = (decimal)li_po.Vectors[1].Y;
-                numericUpDown24_v2z.Value = (decimal)li_po.Vectors[1].Z;
-                numericUpDown23_v2w.Value = (decimal)li_po.Vectors[1].W;
+                numericUpDown9_colorF.Value = (decimal)li_po.Color_Unk;
+                numericUpDown21_v1x.Value = (decimal)li_po.Vector1.X;
+                numericUpDown19_v1y.Value = (decimal)li_po.Vector1.Y;
+                numericUpDown15_v1z.Value = (decimal)li_po.Vector1.Z;
+                numericUpDown14_v1w.Value = (decimal)li_po.Vector1.W;
+                numericUpDown26_v2x.Value = (decimal)li_po.Vector2.X;
+                numericUpDown25_v2y.Value = (decimal)li_po.Vector2.Y;
+                numericUpDown24_v2z.Value = (decimal)li_po.Vector2.Z;
+                numericUpDown23_v2w.Value = (decimal)li_po.Vector2.W;
                 numericUpDown30_v3x.Value = 0;
                 numericUpDown29_v3y.Value = 0;
                 numericUpDown28_v3z.Value = 0;
@@ -322,8 +320,8 @@ namespace TwinsanityEditor
                 textBox3_flag2.Text = Convert.ToString(li_po.Flags[1], 16);
                 textBox4_flag3.Text = Convert.ToString(li_po.Flags[2], 16);
                 textBox5_flag4.Text = Convert.ToString(li_po.Flags[3], 16);
-                textBox9_flag2_1.Text = Convert.ToString(li_po.Flags2[0], 16);
-                textBox8_flag2_2.Text = Convert.ToString(li_po.Flags2[1], 16);
+                //textBox9_flag2_1.Text = Convert.ToString(li_po.Flags2[0], 16);
+                //textBox8_flag2_2.Text = Convert.ToString(li_po.Flags2[1], 16);
             }
             else if (SelType == ScenTabSel.LightsNegative)
             {
@@ -331,24 +329,24 @@ namespace TwinsanityEditor
                 numericUpDown11_colorG.Value = (decimal)li_ne.Color_G;
                 numericUpDown10_colorB.Value = (decimal)li_ne.Color_B;
                 numericUpDown20_radius.Value = (decimal)li_ne.Radius;
-                numericUpDown9_colorF.Value = (decimal)li_ne.UnkFloat;
-                numericUpDown21_v1x.Value = (decimal)li_ne.Vectors[0].X;
-                numericUpDown19_v1y.Value = (decimal)li_ne.Vectors[0].Y;
-                numericUpDown15_v1z.Value = (decimal)li_ne.Vectors[0].Z;
-                numericUpDown14_v1w.Value = (decimal)li_ne.Vectors[0].W;
-                numericUpDown26_v2x.Value = (decimal)li_ne.Vectors[1].X;
-                numericUpDown25_v2y.Value = (decimal)li_ne.Vectors[1].Y;
-                numericUpDown24_v2z.Value = (decimal)li_ne.Vectors[1].Z;
-                numericUpDown23_v2w.Value = (decimal)li_ne.Vectors[1].W;
-                numericUpDown30_v3x.Value = (decimal)li_ne.Vectors[2].X;
-                numericUpDown29_v3y.Value = (decimal)li_ne.Vectors[2].Y;
-                numericUpDown28_v3z.Value = (decimal)li_ne.Vectors[2].Z;
-                numericUpDown27_v3w.Value = (decimal)li_ne.Vectors[2].W;
-                numericUpDown33_nefloats_1.Value = (decimal)li_ne.Floats[0];
-                numericUpDown32_nefloats_2.Value = (decimal)li_ne.Floats[1];
-                numericUpDown31_nefloats_3.Value = (decimal)li_ne.Floats[2];
-                numericUpDown22_nefloats_4.Value = (decimal)li_ne.Floats[3];
-                numericUpDown34_nefloats_5.Value = (decimal)li_ne.Floats[4];
+                numericUpDown9_colorF.Value = (decimal)li_ne.Color_Unk;
+                numericUpDown21_v1x.Value = (decimal)li_ne.Vector1.X;
+                numericUpDown19_v1y.Value = (decimal)li_ne.Vector1.Y;
+                numericUpDown15_v1z.Value = (decimal)li_ne.Vector1.Z;
+                numericUpDown14_v1w.Value = (decimal)li_ne.Vector1.W;
+                numericUpDown26_v2x.Value = (decimal)li_ne.Vector2.X;
+                numericUpDown25_v2y.Value = (decimal)li_ne.Vector2.Y;
+                numericUpDown24_v2z.Value = (decimal)li_ne.Vector2.Z;
+                numericUpDown23_v2w.Value = (decimal)li_ne.Vector2.W;
+                numericUpDown30_v3x.Value = (decimal)li_ne.Vector3.X;
+                numericUpDown29_v3y.Value = (decimal)li_ne.Vector3.Y;
+                numericUpDown28_v3z.Value = (decimal)li_ne.Vector3.Z;
+                numericUpDown27_v3w.Value = (decimal)li_ne.Vector3.W;
+                //numericUpDown33_nefloats_1.Value = (decimal)li_ne.Floats[0];
+                //numericUpDown32_nefloats_2.Value = (decimal)li_ne.Floats[1];
+                //numericUpDown31_nefloats_3.Value = (decimal)li_ne.Floats[2];
+                //numericUpDown22_nefloats_4.Value = (decimal)li_ne.Floats[3];
+                //numericUpDown34_nefloats_5.Value = (decimal)li_ne.Floats[4];
                 textBox2_flag1.Text = Convert.ToString(li_ne.Flags[0], 16);
                 textBox3_flag2.Text = Convert.ToString(li_ne.Flags[1], 16);
                 textBox4_flag3.Text = Convert.ToString(li_ne.Flags[2], 16);
@@ -428,7 +426,7 @@ namespace TwinsanityEditor
 
             ScenTabSel SelType = (ScenTabSel)tabControl2.SelectedIndex;
 
-            if (SelType == ScenTabSel.Scenery || SelType == ScenTabSel.Submodels)
+            if (SelType == ScenTabSel.Scenery)
             {
                 ins.ModelMatrix[3].X = (float)numericUpDown2.Value;
                 File.RMViewer_UpdateScenery();
@@ -462,7 +460,7 @@ namespace TwinsanityEditor
             if (ignore_value_change) return;
             ScenTabSel SelType = (ScenTabSel)tabControl2.SelectedIndex;
 
-            if (SelType == ScenTabSel.Scenery || SelType == ScenTabSel.Submodels)
+            if (SelType == ScenTabSel.Scenery)
             {
                 ins.ModelMatrix[3].Y = (float)numericUpDown3.Value;
                 File.RMViewer_UpdateScenery();
@@ -496,7 +494,7 @@ namespace TwinsanityEditor
             if (ignore_value_change) return;
             ScenTabSel SelType = (ScenTabSel)tabControl2.SelectedIndex;
 
-            if (SelType == ScenTabSel.Scenery || SelType == ScenTabSel.Submodels)
+            if (SelType == ScenTabSel.Scenery)
             {
                 ins.ModelMatrix[3].Z = (float)numericUpDown4.Value;
                 File.RMViewer_UpdateScenery();
@@ -530,7 +528,7 @@ namespace TwinsanityEditor
             if (ignore_value_change) return;
             ScenTabSel SelType = (ScenTabSel)tabControl2.SelectedIndex;
 
-            if (SelType == ScenTabSel.Scenery || SelType == ScenTabSel.Submodels)
+            if (SelType == ScenTabSel.Scenery)
             {
                 ins.ModelMatrix[3].W = (float)numericUpDown5.Value;
             }
@@ -609,7 +607,7 @@ namespace TwinsanityEditor
         {
             ScenTabSel SelType = (ScenTabSel)tabControl2.SelectedIndex;
 
-            if (SelType == ScenTabSel.Scenery || SelType == ScenTabSel.Submodels)
+            if (SelType == ScenTabSel.Scenery)
             {
                 Pos currentPos = File.RMViewer_GetPos(new Pos(ins.ModelMatrix[3].X, ins.ModelMatrix[3].Y, ins.ModelMatrix[3].Z, ins.ModelMatrix[3].W));
                 ins.ModelMatrix[3].X = -currentPos.X;
@@ -800,6 +798,7 @@ namespace TwinsanityEditor
             if (SelType == ScenTabSel.LightsAmbient)
             {
                 int id = controller.Data.LightsAmbient.Count;
+                /*
                 SceneryData.LightAmbient light = new SceneryData.LightAmbient()
                 {
                     Color_R = 1f,
@@ -811,7 +810,8 @@ namespace TwinsanityEditor
                     Vectors = new Pos[2] { new Pos(0, 0, 0, 1), new Pos(0, 0, 0, 1) },
                     Flags = new byte[4] { 0x00, 0x01, 0x00, 0x00 },
                 };
-                controller.Data.LightsAmbient.Add(light);
+                */
+                //controller.Data.LightsAmbient.Add(light);
                 li_am = controller.Data.LightsAmbient[id];
                 listBox3.Items.Add($"Ambient Light {id}");
 
@@ -820,6 +820,7 @@ namespace TwinsanityEditor
             else if (SelType == ScenTabSel.LightsDirectional)
             {
                 int id = controller.Data.LightsDirectional.Count;
+                /*
                 SceneryData.LightDirectional light = new SceneryData.LightDirectional()
                 {
                     Color_R = 1f,
@@ -832,7 +833,8 @@ namespace TwinsanityEditor
                     Flags = new byte[4] { 0x01, 0x01, 0x00, 0x00 },
                     Flags2 = new byte[2] { 0x00, 0x00 },
                 };
-                controller.Data.LightsDirectional.Add(light);
+                */
+                //controller.Data.LightsDirectional.Add(light);
                 li_di = controller.Data.LightsDirectional[id];
                 listBox4.Items.Add($"Directional Light {id}");
 
@@ -841,6 +843,7 @@ namespace TwinsanityEditor
             else if (SelType == ScenTabSel.LightsPoint)
             {
                 int id = controller.Data.LightsPoint.Count;
+                /*
                 SceneryData.LightPoint light = new SceneryData.LightPoint()
                 {
                     Color_R = 1f,
@@ -853,7 +856,8 @@ namespace TwinsanityEditor
                     Flags = new byte[4] { 0x02, 0x01, 0x00, 0x00 },
                     Flags2 = new byte[2] { 0x00, 0x00 },
                 };
-                controller.Data.LightsPoint.Add(light);
+                */
+                //controller.Data.LightsPoint.Add(light);
                 li_po = controller.Data.LightsPoint[id];
                 listBox5.Items.Add($"Point Light {id}");
 
@@ -862,6 +866,7 @@ namespace TwinsanityEditor
             else if (SelType == ScenTabSel.LightsNegative)
             {
                 int id = controller.Data.LightsNegative.Count;
+                /*
                 SceneryData.LightNegative light = new SceneryData.LightNegative()
                 {
                     Color_R = 1f,
@@ -874,7 +879,8 @@ namespace TwinsanityEditor
                     Flags = new byte[4] { 0x03, 0x01, 0x00, 0x00 },
                     Floats = new float[5] { 0f, 0f, 0f, 0f, 0f },
                 };
-                controller.Data.LightsNegative.Add(light);
+                */
+                //controller.Data.LightsNegative.Add(light);
                 li_ne = controller.Data.LightsNegative[id];
                 listBox6.Items.Add($"Negative Light {id}");
 
@@ -1212,22 +1218,22 @@ namespace TwinsanityEditor
 
             if (SelType == ScenTabSel.LightsAmbient)
             {
-                li_am.UnkFloat = (float)numericUpDown9_colorF.Value;
+                li_am.Color_Unk = (float)numericUpDown9_colorF.Value;
                 File.RMViewer_UpdateLights();
             }
             else if (SelType == ScenTabSel.LightsDirectional)
             {
-                li_di.UnkFloat = (float)numericUpDown9_colorF.Value;
+                li_di.Color_Unk = (float)numericUpDown9_colorF.Value;
                 File.RMViewer_UpdateLights();
             }
             else if (SelType == ScenTabSel.LightsPoint)
             {
-                li_po.UnkFloat = (float)numericUpDown9_colorF.Value;
+                li_po.Color_Unk = (float)numericUpDown9_colorF.Value;
                 File.RMViewer_UpdateLights();
             }
             else if (SelType == ScenTabSel.LightsNegative)
             {
-                li_ne.UnkFloat = (float)numericUpDown9_colorF.Value;
+                li_ne.Color_Unk = (float)numericUpDown9_colorF.Value;
                 File.RMViewer_UpdateLights();
             }
 
@@ -1402,12 +1408,12 @@ namespace TwinsanityEditor
 
                 if (SelType == ScenTabSel.LightsDirectional)
                 {
-                    li_di.Flags2[0] = outByte;
+                    //li_di.Flags2[0] = outByte;
                     File.RMViewer_UpdateLights();
                 }
                 else if (SelType == ScenTabSel.LightsPoint)
                 {
-                    li_po.Flags2[0] = outByte;
+                    //li_po.Flags2[0] = outByte;
                     File.RMViewer_UpdateLights();
                 }
 
@@ -1425,12 +1431,12 @@ namespace TwinsanityEditor
 
                 if (SelType == ScenTabSel.LightsDirectional)
                 {
-                    li_di.Flags2[1] = outByte;
+                    //li_di.Flags2[1] = outByte;
                     File.RMViewer_UpdateLights();
                 }
                 else if (SelType == ScenTabSel.LightsPoint)
                 {
-                    li_po.Flags2[1] = outByte;
+                    //li_po.Flags2[1] = outByte;
                     File.RMViewer_UpdateLights();
                 }
 
@@ -1446,22 +1452,22 @@ namespace TwinsanityEditor
 
             if (SelType == ScenTabSel.LightsAmbient)
             {
-                li_am.Vectors[0].X = (float)numericUpDown21_v1x.Value;
+                li_am.Vector1.X = (float)numericUpDown21_v1x.Value;
                 File.RMViewer_UpdateLights();
             }
             else if (SelType == ScenTabSel.LightsDirectional)
             {
-                li_di.Vectors[0].X = (float)numericUpDown21_v1x.Value;
+                li_di.Vector1.X = (float)numericUpDown21_v1x.Value;
                 File.RMViewer_UpdateLights();
             }
             else if (SelType == ScenTabSel.LightsPoint)
             {
-                li_po.Vectors[0].X = (float)numericUpDown21_v1x.Value;
+                li_po.Vector1.X = (float)numericUpDown21_v1x.Value;
                 File.RMViewer_UpdateLights();
             }
             else if (SelType == ScenTabSel.LightsNegative)
             {
-                li_ne.Vectors[0].X = (float)numericUpDown21_v1x.Value;
+                li_ne.Vector1.X = (float)numericUpDown21_v1x.Value;
                 File.RMViewer_UpdateLights();
             }
 
@@ -1476,22 +1482,22 @@ namespace TwinsanityEditor
 
             if (SelType == ScenTabSel.LightsAmbient)
             {
-                li_am.Vectors[0].Y = (float)numericUpDown19_v1y.Value;
+                li_am.Vector1.Y = (float)numericUpDown19_v1y.Value;
                 File.RMViewer_UpdateLights();
             }
             else if (SelType == ScenTabSel.LightsDirectional)
             {
-                li_di.Vectors[0].Y = (float)numericUpDown19_v1y.Value;
+                li_di.Vector1.Y = (float)numericUpDown19_v1y.Value;
                 File.RMViewer_UpdateLights();
             }
             else if (SelType == ScenTabSel.LightsPoint)
             {
-                li_po.Vectors[0].Y = (float)numericUpDown19_v1y.Value;
+                li_po.Vector1.Y = (float)numericUpDown19_v1y.Value;
                 File.RMViewer_UpdateLights();
             }
             else if (SelType == ScenTabSel.LightsNegative)
             {
-                li_ne.Vectors[0].Y = (float)numericUpDown19_v1y.Value;
+                li_ne.Vector1.Y = (float)numericUpDown19_v1y.Value;
                 File.RMViewer_UpdateLights();
             }
 
@@ -1506,22 +1512,22 @@ namespace TwinsanityEditor
 
             if (SelType == ScenTabSel.LightsAmbient)
             {
-                li_am.Vectors[0].Z = (float)numericUpDown15_v1z.Value;
+                li_am.Vector1.Z = (float)numericUpDown15_v1z.Value;
                 File.RMViewer_UpdateLights();
             }
             else if (SelType == ScenTabSel.LightsDirectional)
             {
-                li_di.Vectors[0].Z = (float)numericUpDown15_v1z.Value;
+                li_di.Vector1.Z = (float)numericUpDown15_v1z.Value;
                 File.RMViewer_UpdateLights();
             }
             else if (SelType == ScenTabSel.LightsPoint)
             {
-                li_po.Vectors[0].Z = (float)numericUpDown15_v1z.Value;
+                li_po.Vector1.Z = (float)numericUpDown15_v1z.Value;
                 File.RMViewer_UpdateLights();
             }
             else if (SelType == ScenTabSel.LightsNegative)
             {
-                li_ne.Vectors[0].Z = (float)numericUpDown15_v1z.Value;
+                li_ne.Vector1.Z = (float)numericUpDown15_v1z.Value;
                 File.RMViewer_UpdateLights();
             }
 
@@ -1536,22 +1542,22 @@ namespace TwinsanityEditor
 
             if (SelType == ScenTabSel.LightsAmbient)
             {
-                li_am.Vectors[0].W = (float)numericUpDown14_v1w.Value;
+                li_am.Vector1.W = (float)numericUpDown14_v1w.Value;
                 File.RMViewer_UpdateLights();
             }
             else if (SelType == ScenTabSel.LightsDirectional)
             {
-                li_di.Vectors[0].W = (float)numericUpDown14_v1w.Value;
+                li_di.Vector1.W = (float)numericUpDown14_v1w.Value;
                 File.RMViewer_UpdateLights();
             }
             else if (SelType == ScenTabSel.LightsPoint)
             {
-                li_po.Vectors[0].W = (float)numericUpDown14_v1w.Value;
+                li_po.Vector1.W = (float)numericUpDown14_v1w.Value;
                 File.RMViewer_UpdateLights();
             }
             else if (SelType == ScenTabSel.LightsNegative)
             {
-                li_ne.Vectors[0].W = (float)numericUpDown14_v1w.Value;
+                li_ne.Vector1.W = (float)numericUpDown14_v1w.Value;
                 File.RMViewer_UpdateLights();
             }
 
@@ -1566,22 +1572,22 @@ namespace TwinsanityEditor
 
             if (SelType == ScenTabSel.LightsAmbient)
             {
-                li_am.Vectors[1].X = (float)numericUpDown26_v2x.Value;
+                li_am.Vector2.X = (float)numericUpDown26_v2x.Value;
                 File.RMViewer_UpdateLights();
             }
             else if (SelType == ScenTabSel.LightsDirectional)
             {
-                li_di.Vectors[1].X = (float)numericUpDown26_v2x.Value;
+                li_di.Vector2.X = (float)numericUpDown26_v2x.Value;
                 File.RMViewer_UpdateLights();
             }
             else if (SelType == ScenTabSel.LightsPoint)
             {
-                li_po.Vectors[1].X = (float)numericUpDown26_v2x.Value;
+                li_po.Vector2.X = (float)numericUpDown26_v2x.Value;
                 File.RMViewer_UpdateLights();
             }
             else if (SelType == ScenTabSel.LightsNegative)
             {
-                li_ne.Vectors[1].X = (float)numericUpDown26_v2x.Value;
+                li_ne.Vector2.X = (float)numericUpDown26_v2x.Value;
                 File.RMViewer_UpdateLights();
             }
 
@@ -1596,22 +1602,22 @@ namespace TwinsanityEditor
 
             if (SelType == ScenTabSel.LightsAmbient)
             {
-                li_am.Vectors[1].Y = (float)numericUpDown25_v2y.Value;
+                li_am.Vector2.Y = (float)numericUpDown25_v2y.Value;
                 File.RMViewer_UpdateLights();
             }
             else if (SelType == ScenTabSel.LightsDirectional)
             {
-                li_di.Vectors[1].Y = (float)numericUpDown25_v2y.Value;
+                li_di.Vector2.Y = (float)numericUpDown25_v2y.Value;
                 File.RMViewer_UpdateLights();
             }
             else if (SelType == ScenTabSel.LightsPoint)
             {
-                li_po.Vectors[1].Y = (float)numericUpDown25_v2y.Value;
+                li_po.Vector2.Y = (float)numericUpDown25_v2y.Value;
                 File.RMViewer_UpdateLights();
             }
             else if (SelType == ScenTabSel.LightsNegative)
             {
-                li_ne.Vectors[1].Y = (float)numericUpDown25_v2y.Value;
+                li_ne.Vector2.Y = (float)numericUpDown25_v2y.Value;
                 File.RMViewer_UpdateLights();
             }
 
@@ -1626,22 +1632,22 @@ namespace TwinsanityEditor
 
             if (SelType == ScenTabSel.LightsAmbient)
             {
-                li_am.Vectors[1].Z = (float)numericUpDown24_v2z.Value;
+                li_am.Vector2.Z = (float)numericUpDown24_v2z.Value;
                 File.RMViewer_UpdateLights();
             }
             else if (SelType == ScenTabSel.LightsDirectional)
             {
-                li_di.Vectors[1].Z = (float)numericUpDown24_v2z.Value;
+                li_di.Vector2.Z = (float)numericUpDown24_v2z.Value;
                 File.RMViewer_UpdateLights();
             }
             else if (SelType == ScenTabSel.LightsPoint)
             {
-                li_po.Vectors[1].Z = (float)numericUpDown24_v2z.Value;
+                li_po.Vector2.Z = (float)numericUpDown24_v2z.Value;
                 File.RMViewer_UpdateLights();
             }
             else if (SelType == ScenTabSel.LightsNegative)
             {
-                li_ne.Vectors[1].Z = (float)numericUpDown24_v2z.Value;
+                li_ne.Vector2.Z = (float)numericUpDown24_v2z.Value;
                 File.RMViewer_UpdateLights();
             }
 
@@ -1656,22 +1662,22 @@ namespace TwinsanityEditor
 
             if (SelType == ScenTabSel.LightsAmbient)
             {
-                li_am.Vectors[1].W = (float)numericUpDown23_v2w.Value;
+                li_am.Vector2.W = (float)numericUpDown23_v2w.Value;
                 File.RMViewer_UpdateLights();
             }
             else if (SelType == ScenTabSel.LightsDirectional)
             {
-                li_di.Vectors[1].W = (float)numericUpDown23_v2w.Value;
+                li_di.Vector2.W = (float)numericUpDown23_v2w.Value;
                 File.RMViewer_UpdateLights();
             }
             else if (SelType == ScenTabSel.LightsPoint)
             {
-                li_po.Vectors[1].W = (float)numericUpDown23_v2w.Value;
+                li_po.Vector2.W = (float)numericUpDown23_v2w.Value;
                 File.RMViewer_UpdateLights();
             }
             else if (SelType == ScenTabSel.LightsNegative)
             {
-                li_ne.Vectors[1].W = (float)numericUpDown23_v2w.Value;
+                li_ne.Vector2.W = (float)numericUpDown23_v2w.Value;
                 File.RMViewer_UpdateLights();
             }
 
@@ -1686,12 +1692,12 @@ namespace TwinsanityEditor
 
             if (SelType == ScenTabSel.LightsDirectional)
             {
-                li_di.Vectors[2].X = (float)numericUpDown30_v3x.Value;
+                li_di.Vector3.X = (float)numericUpDown30_v3x.Value;
                 File.RMViewer_UpdateLights();
             }
             else if (SelType == ScenTabSel.LightsNegative)
             {
-                li_ne.Vectors[2].X = (float)numericUpDown30_v3x.Value;
+                li_ne.Vector3.X = (float)numericUpDown30_v3x.Value;
                 File.RMViewer_UpdateLights();
             }
 
@@ -1706,12 +1712,12 @@ namespace TwinsanityEditor
 
             if (SelType == ScenTabSel.LightsDirectional)
             {
-                li_di.Vectors[2].Y = (float)numericUpDown29_v3y.Value;
+                li_di.Vector3.Y = (float)numericUpDown29_v3y.Value;
                 File.RMViewer_UpdateLights();
             }
             else if (SelType == ScenTabSel.LightsNegative)
             {
-                li_ne.Vectors[2].Y = (float)numericUpDown29_v3y.Value;
+                li_ne.Vector3.Y = (float)numericUpDown29_v3y.Value;
                 File.RMViewer_UpdateLights();
             }
 
@@ -1726,12 +1732,12 @@ namespace TwinsanityEditor
 
             if (SelType == ScenTabSel.LightsDirectional)
             {
-                li_di.Vectors[2].Z = (float)numericUpDown28_v3z.Value;
+                li_di.Vector3.Z = (float)numericUpDown28_v3z.Value;
                 File.RMViewer_UpdateLights();
             }
             else if (SelType == ScenTabSel.LightsNegative)
             {
-                li_ne.Vectors[2].Z = (float)numericUpDown28_v3z.Value;
+                li_ne.Vector3.Z = (float)numericUpDown28_v3z.Value;
                 File.RMViewer_UpdateLights();
             }
 
@@ -1746,12 +1752,12 @@ namespace TwinsanityEditor
 
             if (SelType == ScenTabSel.LightsDirectional)
             {
-                li_di.Vectors[2].W = (float)numericUpDown27_v3w.Value;
+                li_di.Vector3.W = (float)numericUpDown27_v3w.Value;
                 File.RMViewer_UpdateLights();
             }
             else if (SelType == ScenTabSel.LightsNegative)
             {
-                li_ne.Vectors[2].W = (float)numericUpDown27_v3w.Value;
+                li_ne.Vector3.W = (float)numericUpDown27_v3w.Value;
                 File.RMViewer_UpdateLights();
             }
 
@@ -1766,7 +1772,7 @@ namespace TwinsanityEditor
 
             if (SelType == ScenTabSel.LightsNegative)
             {
-                li_ne.Floats[0] = (float)numericUpDown33_nefloats_1.Value;
+                //li_ne.Floats[0] = (float)numericUpDown33_nefloats_1.Value;
                 File.RMViewer_UpdateLights();
             }
 
@@ -1781,7 +1787,7 @@ namespace TwinsanityEditor
 
             if (SelType == ScenTabSel.LightsNegative)
             {
-                li_ne.Floats[1] = (float)numericUpDown32_nefloats_2.Value;
+                //li_ne.Floats[1] = (float)numericUpDown32_nefloats_2.Value;
                 File.RMViewer_UpdateLights();
             }
 
@@ -1796,7 +1802,7 @@ namespace TwinsanityEditor
 
             if (SelType == ScenTabSel.LightsNegative)
             {
-                li_ne.Floats[2] = (float)numericUpDown31_nefloats_3.Value;
+               // li_ne.Floats[2] = (float)numericUpDown31_nefloats_3.Value;
                 File.RMViewer_UpdateLights();
             }
 
@@ -1811,7 +1817,7 @@ namespace TwinsanityEditor
 
             if (SelType == ScenTabSel.LightsNegative)
             {
-                li_ne.Floats[3] = (float)numericUpDown22_nefloats_4.Value;
+               // li_ne.Floats[3] = (float)numericUpDown22_nefloats_4.Value;
                 File.RMViewer_UpdateLights();
             }
 
@@ -1826,11 +1832,38 @@ namespace TwinsanityEditor
 
             if (SelType == ScenTabSel.LightsNegative)
             {
-                li_ne.Floats[4] = (float)numericUpDown34_nefloats_5.Value;
+                //li_ne.Floats[4] = (float)numericUpDown34_nefloats_5.Value;
                 File.RMViewer_UpdateLights();
             }
 
             controller.UpdateText();
+        }
+
+        private void treeView1_AfterSelect(object sender, TreeViewEventArgs e)
+        {
+            if (null != SceneryTreeView.SelectedNode)
+            {
+                Object tag = SceneryTreeView.SelectedNode.Tag;
+                TreeNode node = SceneryTreeView.SelectedNode;
+                if (tag is SceneryData.SceneryStruct scene)
+                {
+
+                }
+                else if (tag is SceneryData.SceneryModelStruct model)
+                {
+                    
+                }
+                else if (tag is SceneryData.ScenerySubModel submodel)
+                {
+                    ins = submodel;
+                    File.RMViewer_CustomTeleport(submodel.ModelMatrix[3].X, submodel.ModelMatrix[3].Y, submodel.ModelMatrix[3].Z);
+                    tabControl1.Enabled = true;
+                    tabControl1.Tag = 0x00;
+                    ignore_value_change = true;
+                    UpdateTab1();
+                    ignore_value_change = false;
+                }
+            }
         }
     }
 }
