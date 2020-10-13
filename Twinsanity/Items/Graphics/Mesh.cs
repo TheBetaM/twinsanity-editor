@@ -1,3 +1,4 @@
+using System;
 using System.IO;
 using System.Collections.Generic;
 
@@ -113,13 +114,30 @@ namespace Twinsanity
                     grp.leftovers = new byte[] { };
                     sub.Groups.Add(grp);
                 }
-                Group group = sub.Groups[sub.Groups.Count - 1];
-                group.leftovers = new byte[(int)(sub.BlockSize + offset - (reader.BaseStream.Position - sk))];
-                group.leftovers = reader.ReadBytes((int)(sub.BlockSize + offset - (reader.BaseStream.Position - sk)));
+                if (sub.Groups.Count > 0)
+                {
+                    long curPos = reader.BaseStream.Position;
+                    Group group = sub.Groups[sub.Groups.Count - 1];
+                    int leftoverSize = (int)(sub.BlockSize + offset - (reader.BaseStream.Position - sk));
+                    leftoverSize -= 4;
+                    reader.BaseStream.Position += leftoverSize;
+                    int paddingBytes = reader.ReadInt32();
+                    reader.BaseStream.Position = curPos;
+                    leftoverSize = (int)(sub.BlockSize + paddingBytes + offset - (reader.BaseStream.Position - sk));
+                    //Console.WriteLine("Padding: " + paddingBytes);
 
-                sub.Groups[sub.Groups.Count - 1] = group;
+                    group.leftovers = new byte[leftoverSize];
+                    group.leftovers = reader.ReadBytes(leftoverSize);
+                    sub.Groups[sub.Groups.Count - 1] = group;
+                }
+
                 SubModels.Add(sub);
             }
+
+            //Console.WriteLine("end pos: " + (reader.BaseStream.Position - sk) + " target: " + size);
+
+            //Remain = reader.ReadBytes((size) - (int)(reader.BaseStream.Position - sk));
+
         }
 
         public override void Save(BinaryWriter writer)
@@ -196,7 +214,10 @@ namespace Twinsanity
                     writer.Write(group.EndSignature1);
                     writer.Write(group.EndSignature2);
                 }
-                writer.Write(sub.Groups[sub.Groups.Count - 1].leftovers);
+                if (sub.Groups.Count > 0)
+                {
+                    writer.Write(sub.Groups[sub.Groups.Count - 1].leftovers);
+                }
             }
         }
 

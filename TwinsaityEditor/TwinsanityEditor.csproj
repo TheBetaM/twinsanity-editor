@@ -171,9 +171,11 @@
   <ItemGroup>
     <Compile Include="AssemblyInfo.cs" />
     <Compile Include="Controllers\AIPathController.cs" />
+    <Compile Include="Controllers\AnimationController.cs" />
     <Compile Include="Controllers\ArmatureModelController.cs" />
     <Compile Include="Controllers\ArmatureModelXController.cs" />
     <Compile Include="Controllers\CameraController.cs" />
+    <Compile Include="Controllers\CodeModelController.cs" />
     <Compile Include="Controllers\CollisionSurfaceController.cs" />
     <Compile Include="Controllers\Controller.cs" />
     <Compile Include="Controllers\ColDataController.cs" />
@@ -181,8 +183,11 @@
     <Compile Include="Controllers\FileController.cs" />
     <Compile Include="Controllers\ChunkLinksController.cs" />
     <Compile Include="Controllers\GraphicsInfoController.cs" />
+    <Compile Include="Controllers\InstanceDemoController.cs" />
+    <Compile Include="Controllers\InstanceTemplateDemoController.cs" />
     <Compile Include="Controllers\MaterialDController.cs" />
     <Compile Include="Controllers\MeshXController.cs" />
+    <Compile Include="Controllers\ObjectDemoController.cs" />
     <Compile Include="Controllers\ParticleDataController.cs" />
     <Compile Include="Controllers\SceneryDataController.cs" />
     <Compile Include="Controllers\SkydomeController.cs" />

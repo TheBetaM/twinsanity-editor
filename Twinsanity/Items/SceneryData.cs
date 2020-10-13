@@ -532,7 +532,7 @@ namespace Twinsanity
                 writer.Write(modelCount);
                 writer.Write(specialModelCount);
 
-                if (1 != 0)
+                if (ptr.Models.Count != 0)
                 {
                     for (int i = 0; i < ptr.Models.Count; i++)
                     {

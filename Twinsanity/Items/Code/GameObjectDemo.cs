@@ -1,10 +1,10 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.IO;
 
 namespace Twinsanity
 {
-    public class GameObject : TwinsItem
+    public class GameObjectDemo : TwinsItem
     {
         private int size;
         public uint UnkBitfield { get; set; }
@@ -15,7 +15,7 @@ namespace Twinsanity
         public List<UInt16> Scripts { get; set; } = new List<UInt16>();
         public List<UInt16> Objects { get; set; } = new List<UInt16>();
         public List<UInt16> Sounds { get; set; } = new List<UInt16>();
-        public uint PHeader { get; set; } // Inst;Pos;Path;00
+        //public uint PHeader { get; set; } // Inst;Pos;Path;00
         public uint PUI32 { get; set; }
         //private int pUi321.Length = 0;
         //private int pUi322.Length = 1;
@@ -38,7 +38,7 @@ namespace Twinsanity
         public List<Script.MainScript.ScriptCommand> scriptCommands = new List<Script.MainScript.ScriptCommand>();
 
         public string Name { get; set; }
-        public GameObject()
+        public GameObjectDemo()
         {
             while (ScriptSlots.Count < 8)
             {
@@ -61,46 +61,55 @@ namespace Twinsanity
             var sk = writer.BaseStream.Position;
             UpdateSlots();
             writer.Write(UnkBitfield);
+            /*
             for (int i = 0; i < 8; ++i)
             {
                 writer.Write(ScriptSlots[i]);
             }
+            */
+            writer.Write((byte)OGIs.Count);
+            //writer.Write(Anims.Count);
+            writer.Write((byte)Scripts.Count);
+            writer.Write((byte)Objects.Count);
+            writer.Write((byte)UI32.Count);
+            writer.Write(Sounds.Count);
+
             writer.Write(Name.Length);
-            writer.Write(Name.ToCharArray(), 0, Name.Length);
-            writer.Write(UI32.Count);
+            writer.Write(Name.ToCharArray());
+
             for (int i = 0; i < UI32.Count; ++i)
                 writer.Write(UI32[i]);
-            writer.Write(OGIs.Count);
+
             for (int i = 0; i < OGIs.Count; ++i)
                 writer.Write(OGIs[i]);
-            writer.Write(Anims.Count);
+
             for (int i = 0; i < Anims.Count; ++i)
                 writer.Write(Anims[i]);
-            writer.Write(Scripts.Count);
+
             for (int i = 0; i < Scripts.Count; ++i)
                 writer.Write(Scripts[i]);
-            writer.Write(Objects.Count);
+
             for (int i = 0; i < Objects.Count; ++i)
                 writer.Write(Objects[i]);
-            writer.Write(Sounds.Count);
+
             for (int i = 0; i < Sounds.Count; ++i)
                 writer.Write(Sounds[i]);
 
             if ((UnkBitfield & 0x20000000) != 0x0)
             {
-                PHeader = (uint)((byte)instFlagsList.Count
-                | (instFloatsList.Count << 8)
-                | (instIntegerList.Count << 16));
-
-                writer.Write(PHeader);
+                //PHeader = (uint)((byte)instFlagsList.Count
+                //| (instFloatsList.Count << 8)
+                //| (instIntegerList.Count << 16));
+                writer.Write((byte)instFlagsList.Count);
+                writer.Write((byte)instFloatsList.Count);
+                writer.Write((byte)instIntegerList.Count);
+                writer.Write((byte)0);
+                //writer.Write(PHeader);
                 writer.Write(PUI32);
-                writer.Write(instFlagsList.Count);
                 for (int i = 0; i < instFlagsList.Count; ++i)
                     writer.Write(instFlagsList[i]);
-                writer.Write(instFloatsList.Count);
                 for (int i = 0; i < instFloatsList.Count; ++i)
                     writer.Write(instFloatsList[i]);
-                writer.Write(instIntegerList.Count);
                 for (int i = 0; i < instIntegerList.Count; ++i)
                     writer.Write(instIntegerList[i]);
             }
@@ -162,26 +171,25 @@ namespace Twinsanity
 
         public override void Load(BinaryReader reader, int size)
         {
-            if (ParentType == SectionType.ScriptX)
-            {
-                scriptGameVersion = 1;
-            }
-            else if (ParentType == SectionType.ScriptDemo)
-            {
-                scriptGameVersion = 2;
-            }
-            else
-            {
-                scriptGameVersion = 0;
-            }
+            scriptGameVersion = 2;
 
             var sk = reader.BaseStream.Position;
 
             UnkBitfield = reader.ReadUInt32();
+            /*
             for (int i = 0; i < 8; ++i)
             {
                 ScriptSlots[i] = reader.ReadByte();
             }
+            */
+
+            var Count_OGI = reader.ReadByte();
+            var Count_Anim = Count_OGI;
+            var Count_Script = reader.ReadByte();
+            var Count_GameObject = reader.ReadByte();
+            var Count_UnkI32 = reader.ReadByte();
+            //reader.ReadUInt32();
+            var Count_Sound = reader.ReadUInt32();
 
             //Class1 = reader.ReadUInt32();
             //Class2 = reader.ReadUInt32();
@@ -190,124 +198,122 @@ namespace Twinsanity
             Name = new string(reader.ReadChars(len));
 
             // Read UInt32 script slots
-            var cnt = reader.ReadInt32();
             UI32.Clear();
-            for (int i = 0; i < cnt; ++i)
+            for (int i = 0; i < Count_UnkI32; ++i)
                 UI32.Add(reader.ReadUInt32());
 
             // Read OGI script slots
-            cnt = reader.ReadInt32();
             OGIs.Clear();
-            for (int i = 0; i < cnt; ++i)
+            for (int i = 0; i < Count_OGI; ++i)
                 OGIs.Add(reader.ReadUInt16());
 
             // Read Animation script slots
-            cnt = reader.ReadInt32();
             Anims.Clear();
-            for (int i = 0; i < cnt; ++i)
+            for (int i = 0; i < Count_Anim; ++i)
                 Anims.Add(reader.ReadUInt16());
 
             // Read Script script slots
-            cnt = reader.ReadInt32();
             Scripts.Clear();
-            for (int i = 0; i < cnt; ++i)
+            for (int i = 0; i < Count_Script; ++i)
                 Scripts.Add(reader.ReadUInt16());
 
             // Read Object script slots
-            cnt = reader.ReadInt32();
             Objects.Clear();
-            for (int i = 0; i < cnt; ++i)
+            for (int i = 0; i < Count_GameObject; ++i)
                 Objects.Add(reader.ReadUInt16());
 
             // Read Sound script slots
-            cnt = reader.ReadInt32();
             Sounds.Clear();
-            for (int i = 0; i < cnt; ++i)
+            for (int i = 0; i < Count_Sound; ++i)
                 Sounds.Add(reader.ReadUInt16());
 
             // Read instance properties
             if ((UnkBitfield & 0x20000000) != 0x0)
             {
-                PHeader = reader.ReadUInt32();
+                //PHeader = reader.ReadUInt32();
+                //reader.BaseStream.Position -= 4;
+                var Count_Flags = reader.ReadByte();
+                var Count_Floats = reader.ReadByte();
+                var Count_Ints = reader.ReadByte();
+                reader.ReadByte();
                 PUI32 = reader.ReadUInt32();
 
-                cnt = reader.ReadInt32();
                 instFlagsList.Clear();
-                for (int i = 0; i < cnt; ++i)
+                for (int i = 0; i < Count_Flags; ++i)
                     instFlagsList.Add(reader.ReadUInt32());
 
-                cnt = reader.ReadInt32();
                 instFloatsList.Clear();
-                for (int i = 0; i < cnt; ++i)
+                for (int i = 0; i < Count_Floats; ++i)
                     instFloatsList.Add(reader.ReadSingle());
 
-                cnt = reader.ReadInt32();
                 instIntegerList.Clear();
-                for (int i = 0; i < cnt; ++i)
+                for (int i = 0; i < Count_Ints; ++i)
                     instIntegerList.Add(reader.ReadUInt32());
             }
             else
             {
-                PHeader = 0;
+                //PHeader = 0;
                 PUI32 = 0;
                 instFlagsList.Clear();
                 instFloatsList.Clear();
                 instIntegerList.Clear();
             }
+
             // Read IDs needed for instance creation
             if ((UnkBitfield & 0x40000000) != 0x0)
             {
                 flag = reader.ReadUInt32();
                 if ((flag & 0x00000001) != 0)
                 {
-                    cnt = reader.ReadInt32();
+                    var cnt = reader.ReadInt32();
                     cObjects.Clear();
                     for (int i = 0; i < cnt; ++i)
                         cObjects.Add(reader.ReadUInt16());
                 }
                 if ((flag & 0x00000002) != 0)
                 {
-                    cnt = reader.ReadInt32();
+                    var cnt = reader.ReadInt32();
                     cOGIs.Clear();
                     for (int i = 0; i < cnt; ++i)
                         cOGIs.Add(reader.ReadUInt16());
                 }
                 if ((flag & 0x00000004) != 0)
                 {
-                    cnt = reader.ReadInt32();
+                    var cnt = reader.ReadInt32();
                     cAnims.Clear();
                     for (int i = 0; i < cnt; ++i)
                         cAnims.Add(reader.ReadUInt16());
                 }
                 if ((flag & 0x00000008) != 0)
                 {
-                    cnt = reader.ReadInt32();
+                    var cnt = reader.ReadInt32();
                     cCM.Clear();
                     for (int i = 0; i < cnt; ++i)
                         cCM.Add(reader.ReadUInt16());
                 }
                 if ((flag & 0x00000010) != 0)
                 {
-                    cnt = reader.ReadInt32();
+                    var cnt = reader.ReadInt32();
                     cScripts.Clear();
                     for (int i = 0; i < cnt; ++i)
                         cScripts.Add(reader.ReadUInt16());
                 }
                 if ((flag & 0x00000020) != 0)
                 {
-                    cnt = reader.ReadInt32();
+                    var cnt = reader.ReadInt32();
                     cUnk.Clear();
                     for (int i = 0; i < cnt; ++i)
                         cUnk.Add(reader.ReadUInt16());
                 }
                 if ((flag & 0x00000040) != 0)
                 {
-                    cnt = reader.ReadInt32();
+                    var cnt = reader.ReadInt32();
                     cSounds.Clear();
                     for (int i = 0; i < cnt; ++i)
                         cSounds.Add(reader.ReadUInt16());
                 }
             }
+
             scriptCommandsAmount = (int)reader.ReadUInt32();
             if (scriptCommandsAmount != 0)
             {
@@ -336,22 +342,22 @@ namespace Twinsanity
             size += 4;
             size += Name.Length;
 
-            size += 4;
+            //size += 4;
             size += UI32.Count * 4;
 
-            size += 4;
+            //size += 4;
             size += OGIs.Count * 2;
 
-            size += 4;
+            //size += 4;
             size += Anims.Count * 2;
 
-            size += 4;
+            //size += 4;
             size += Scripts.Count * 2;
 
-            size += 4;
+            //size += 4;
             size += Objects.Count * 2;
 
-            size += 4;
+            //size += 4;
             size += Sounds.Count * 2;
 
             if ((UnkBitfield & 0x20000000) != 0x0)
@@ -359,13 +365,13 @@ namespace Twinsanity
                 size += 4; // PHeader
                 size += 4; // UnkInt
 
-                size += 4;
+                //size += 4;
                 size += instFlagsList.Count * 4;
 
-                size += 4;
+                //size += 4;
                 size += instFloatsList.Count * 4;
 
-                size += 4;
+                //size += 4;
                 size += instIntegerList.Count * 4;
             }
             updateFlag();

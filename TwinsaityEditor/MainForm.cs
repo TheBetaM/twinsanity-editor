@@ -173,6 +173,16 @@ namespace TwinsanityEditor
                 c = new CameraController(this, (Camera)a, targetFile);
             else if (a is InstanceTemplate)
                 c = new InstaceTemplateController(this, (InstanceTemplate)a, targetFile);
+            else if (a is InstanceTemplateDemo)
+                c = new InstaceTemplateDemoController(this, (InstanceTemplateDemo)a, targetFile);
+            else if (a is InstanceDemo)
+                c = new InstanceDemoController(this, (InstanceDemo)a, targetFile);
+            else if (a is GameObjectDemo)
+                c = new ObjectDemoController(this, (GameObjectDemo)a, targetFile);
+            else if (a is Animation)
+                c = new AnimationController(this, (Animation)a, targetFile);
+            else if (a is CodeModel)
+                c = new CodeModelController(this, (CodeModel)a, targetFile);
             else
                 c = new ItemController(this, a, targetFile);
 
@@ -312,7 +322,7 @@ namespace TwinsanityEditor
                     string adjustedPath = origPath.Substring(0, origPath.Length - curChunkPath.Length - 4);
                     string ChunkName = @"Startup\Default";
                     string Path = adjustedPath + ChunkName + ".rm";
-                    if (file.Type == TwinsFile.FileType.RM2)
+                    if (file.Type == TwinsFile.FileType.RM2 || file.Type == TwinsFile.FileType.DemoRM2)
                     {
                         Path += "2";
                     }
@@ -327,6 +337,10 @@ namespace TwinsanityEditor
                         if (file.Type == TwinsFile.FileType.RM2)
                         {
                             default_file.LoadFile(Path, TwinsFile.FileType.RM2);
+                        }
+                        else if (file.Type == TwinsFile.FileType.DemoRM2)
+                        {
+                            default_file.LoadFile(Path, TwinsFile.FileType.DemoRM2);
                         }
                         else
                         {
