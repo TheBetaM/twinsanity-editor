@@ -80,5 +80,6 @@ namespace TwinsanityEditor
         Particles,
         Scenery,
         Cameras,
+        Script,
     };
 }

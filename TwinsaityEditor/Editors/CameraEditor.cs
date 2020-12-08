@@ -87,15 +87,15 @@ namespace TwinsanityEditor
         {
             //comboBox1.Text = ins.ObjectID.ToString();
             numericUpDown12.Value = ins.ID;
-            numericUpDown2.Value = (decimal)ins.TriggerPos.X;
-            numericUpDown3.Value = (decimal)ins.TriggerPos.Y;
-            numericUpDown4.Value = (decimal)ins.TriggerPos.Z;
-            numericUpDown5.Value = (decimal)ins.TriggerPos.W;
+            numericUpDown2.Value = (decimal)ins.Coords[1].X;
+            numericUpDown3.Value = (decimal)ins.Coords[1].Y;
+            numericUpDown4.Value = (decimal)ins.Coords[1].Z;
+            numericUpDown5.Value = (decimal)ins.Coords[1].W;
             textBox1.Text = "";// Convert.ToString(ins.UnkI32, 16);
             tabControl1.Tag = (int)tabControl1.Tag | 0x01;
-            numericUpDown13.Value = ins.CamRot.Pitch;
-            numericUpDown14.Value = ins.CamRot.Yaw;
-            numericUpDown15.Value = ins.CamRot.Roll;
+            //numericUpDown13.Value = ins.CamRot.Pitch;
+            //numericUpDown14.Value = ins.CamRot.Yaw;
+            //numericUpDown15.Value = ins.CamRot.Roll;
             GetXRot(true, true); GetYRot(true, true); GetZRot(true, true);
         }
 
@@ -138,33 +138,33 @@ namespace TwinsanityEditor
         private void GetXRot(bool slider, bool num)
         {
             ignore_value_change = true;
-            if (slider)
-                trackBar1.Value = ins.CamRot.Pitch;
-            if (num)
-                numericUpDown6.Value = ins.CamRot.Pitch;
-            label6.Text = string.Format(angleFormat, ins.CamRot.Pitch / (float)(ushort.MaxValue + 1) * 360f);
+            //if (slider)
+                //trackBar1.Value = ins.CamRot.Pitch;
+            //if (num)
+                //numericUpDown6.Value = ins.CamRot.Pitch;
+            //label6.Text = string.Format(angleFormat, ins.CamRot.Pitch / (float)(ushort.MaxValue + 1) * 360f);
             ignore_value_change = false;
         }
 
         private void GetYRot(bool slider, bool num)
         {
             ignore_value_change = true;
-            if (slider)
-                trackBar2.Value = ins.CamRot.Yaw;
-            if (num)
-                numericUpDown7.Value = ins.CamRot.Yaw;
-            label7.Text = string.Format(angleFormat, ins.CamRot.Yaw / (float)(ushort.MaxValue + 1) * 360f);
+            //if (slider)
+                //trackBar2.Value = ins.CamRot.Yaw;
+            //if (num)
+                //numericUpDown7.Value = ins.CamRot.Yaw;
+            //label7.Text = string.Format(angleFormat, ins.CamRot.Yaw / (float)(ushort.MaxValue + 1) * 360f);
             ignore_value_change = false;
         }
 
         private void GetZRot(bool slider, bool num)
         {
             ignore_value_change = true;
-            if (slider)
-                trackBar3.Value = ins.CamRot.Roll;
-            if (num)
-                numericUpDown8.Value = ins.CamRot.Roll;
-            label9.Text = string.Format(angleFormat, ins.CamRot.Roll / (float)(ushort.MaxValue + 1) * 360f);
+            //if (slider)
+                //trackBar3.Value = ins.CamRot.Roll;
+            //if (num)
+            //    numericUpDown8.Value = ins.CamRot.Roll;
+            //label9.Text = string.Format(angleFormat, ins.CamRot.Roll / (float)(ushort.MaxValue + 1) * 360f);
             ignore_value_change = false;
         }
 
@@ -181,14 +181,14 @@ namespace TwinsanityEditor
         private void numericUpDown2_ValueChanged(object sender, EventArgs e)
         {
             if (ignore_value_change) return;
-            ins.TriggerPos.X = (float)numericUpDown2.Value;
+            ins.Coords[1].X = (float)numericUpDown2.Value;
             ((Controller)controller.Node.Nodes[controller.Data.RecordIDs[ins.ID]].Tag).UpdateTextBox();
         }
 
         private void numericUpDown3_ValueChanged(object sender, EventArgs e)
         {
             if (ignore_value_change) return;
-            ins.TriggerPos.Y = (float)numericUpDown3.Value;
+            ins.Coords[1].Y = (float)numericUpDown3.Value;
             ((Controller)controller.Node.Nodes[controller.Data.RecordIDs[ins.ID]].Tag).UpdateTextBox();
             //File.RMViewer_LoadInstances();
         }
@@ -196,7 +196,7 @@ namespace TwinsanityEditor
         private void numericUpDown4_ValueChanged(object sender, EventArgs e)
         {
             if (ignore_value_change) return;
-            ins.TriggerPos.Z = (float)numericUpDown4.Value;
+            ins.Coords[1].Z = (float)numericUpDown4.Value;
             ((Controller)controller.Node.Nodes[controller.Data.RecordIDs[ins.ID]].Tag).UpdateTextBox();
             //File.RMViewer_LoadInstances();
         }
@@ -204,13 +204,13 @@ namespace TwinsanityEditor
         private void numericUpDown5_ValueChanged(object sender, EventArgs e)
         {
             if (ignore_value_change) return;
-            ins.TriggerPos.W = (float)numericUpDown5.Value;
+            ins.Coords[1].W = (float)numericUpDown5.Value;
             ((Controller)controller.Node.Nodes[controller.Data.RecordIDs[ins.ID]].Tag).UpdateTextBox();
         }
 
         private void trackBar1_Scroll(object sender, EventArgs e)
         {
-            ins.CamRot.Pitch = (ushort)trackBar1.Value;
+            //ins.CamRot.Pitch = (ushort)trackBar1.Value;
             GetXRot(false, true);
             ((Controller)controller.Node.Nodes[controller.Data.RecordIDs[ins.ID]].Tag).UpdateTextBox();
             //File.RMViewer_LoadInstances();
@@ -218,7 +218,7 @@ namespace TwinsanityEditor
 
         private void trackBar2_Scroll(object sender, EventArgs e)
         {
-            ins.CamRot.Yaw = (ushort)trackBar2.Value;
+            //ins.CamRot.Yaw = (ushort)trackBar2.Value;
             GetYRot(false, true);
             ((Controller)controller.Node.Nodes[controller.Data.RecordIDs[ins.ID]].Tag).UpdateTextBox();
             //File.RMViewer_LoadInstances();
@@ -226,7 +226,7 @@ namespace TwinsanityEditor
 
         private void trackBar3_Scroll(object sender, EventArgs e)
         {
-            ins.CamRot.Roll = (ushort)trackBar3.Value;
+            //ins.CamRot.Roll = (ushort)trackBar3.Value;
             GetZRot(false, true);
             ((Controller)controller.Node.Nodes[controller.Data.RecordIDs[ins.ID]].Tag).UpdateTextBox();
             //File.RMViewer_LoadInstances();
@@ -235,7 +235,7 @@ namespace TwinsanityEditor
         private void numericUpDown6_ValueChanged(object sender, EventArgs e)
         {
             if (ignore_value_change) return;
-            ins.CamRot.Pitch = (ushort)numericUpDown6.Value;
+            //ins.CamRot.Pitch = (ushort)numericUpDown6.Value;
             GetXRot(true, false);
             ((Controller)controller.Node.Nodes[controller.Data.RecordIDs[ins.ID]].Tag).UpdateText();
             //File.RMViewer_LoadInstances();
@@ -244,14 +244,14 @@ namespace TwinsanityEditor
         private void numericUpDown13_ValueChanged(object sender, EventArgs e)
         {
             if (ignore_value_change) return;
-            ins.CamRot.Pitch = (ushort)numericUpDown13.Value;
+            //ins.CamRot.Pitch = (ushort)numericUpDown13.Value;
             ((Controller)controller.Node.Nodes[controller.Data.RecordIDs[ins.ID]].Tag).UpdateText();
         }
 
         private void numericUpDown7_ValueChanged(object sender, EventArgs e)
         {
             if (ignore_value_change) return;
-            ins.CamRot.Yaw = (ushort)numericUpDown7.Value;
+            //ins.CamRot.Yaw = (ushort)numericUpDown7.Value;
             GetYRot(true, false);
             ((Controller)controller.Node.Nodes[controller.Data.RecordIDs[ins.ID]].Tag).UpdateText();
             //File.RMViewer_LoadInstances();
@@ -260,14 +260,14 @@ namespace TwinsanityEditor
         private void numericUpDown14_ValueChanged(object sender, EventArgs e)
         {
             if (ignore_value_change) return;
-            ins.CamRot.Yaw = (ushort)numericUpDown14.Value;
+            //ins.CamRot.Yaw = (ushort)numericUpDown14.Value;
             ((Controller)controller.Node.Nodes[controller.Data.RecordIDs[ins.ID]].Tag).UpdateText();
         }
 
         private void numericUpDown8_ValueChanged(object sender, EventArgs e)
         {
             if (ignore_value_change) return;
-            ins.CamRot.Roll = (ushort)numericUpDown8.Value;
+            //ins.CamRot.Roll = (ushort)numericUpDown8.Value;
             GetZRot(true, false);
             ((Controller)controller.Node.Nodes[controller.Data.RecordIDs[ins.ID]].Tag).UpdateText();
             //File.RMViewer_LoadInstances();
@@ -276,7 +276,7 @@ namespace TwinsanityEditor
         private void numericUpDown15_ValueChanged(object sender, EventArgs e)
         {
             if (ignore_value_change) return;
-            ins.CamRot.Roll = (ushort)numericUpDown15.Value;
+            //ins.CamRot.Roll = (ushort)numericUpDown15.Value;
             ((Controller)controller.Node.Nodes[controller.Data.RecordIDs[ins.ID]].Tag).UpdateText();
         }
 
@@ -377,14 +377,14 @@ namespace TwinsanityEditor
 
         private void button_PosFromCam_Click(object sender, EventArgs e)
         {
-            Pos currentPos = File.RMViewer_GetPos(ins.TriggerPos);
-            ins.TriggerPos.X = currentPos.X;
-            ins.TriggerPos.Y = currentPos.Y;
-            ins.TriggerPos.Z = currentPos.Z;
-            numericUpDown2.Value = (decimal)ins.TriggerPos.X;
-            numericUpDown3.Value = (decimal)ins.TriggerPos.Y;
-            numericUpDown4.Value = (decimal)ins.TriggerPos.Z;
-            numericUpDown5.Value = (decimal)ins.TriggerPos.W;
+            Pos currentPos = File.RMViewer_GetPos(ins.Coords[1]);
+            ins.Coords[1].X = currentPos.X;
+            ins.Coords[1].Y = currentPos.Y;
+            ins.Coords[1].Z = currentPos.Z;
+            numericUpDown2.Value = (decimal)ins.Coords[1].X;
+            numericUpDown3.Value = (decimal)ins.Coords[1].Y;
+            numericUpDown4.Value = (decimal)ins.Coords[1].Z;
+            numericUpDown5.Value = (decimal)ins.Coords[1].W;
             ((Controller)controller.Node.Nodes[controller.Data.RecordIDs[ins.ID]].Tag).UpdateTextBox();
             //File.RMViewer_LoadInstances();
         }

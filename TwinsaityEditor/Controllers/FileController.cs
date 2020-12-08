@@ -28,6 +28,7 @@ namespace TwinsanityEditor
         private Form editChunkLinks;
         private Form editParticles;
         private Form editScenery;
+        private Form editScript;
         private readonly Form[] editInstances = new Form[8], editPositions = new Form[8], editPaths = new Form[8], editTriggers = new Form[8], editCameras = new Form[8];
 
         //Viewers
@@ -35,6 +36,7 @@ namespace TwinsanityEditor
         private SkydomeViewer skyViewer;
         private RMViewer rmViewer;
         private SMViewer smViewer;
+        private TextureViewer texViewer;
         private Dictionary<uint, Form> MeshViewers { get; set; }
         private Dictionary<uint, Form> ModelViewers { get; set; }
 
@@ -71,11 +73,21 @@ namespace TwinsanityEditor
 
         private void LoadFileInfo()
         {
-            if ((Data.Type == TwinsFile.FileType.RM2 || Data.Type == TwinsFile.FileType.RMX) && Data.ContainsItem(10) && Data.GetItem<TwinsSection>(10).ContainsItem(0))
+            if ((Data.Type == TwinsFile.FileType.RM2 || Data.Type == TwinsFile.FileType.RMX || Data.Type == TwinsFile.FileType.DemoRM2) && Data.ContainsItem(10) && Data.GetItem<TwinsSection>(10).ContainsItem(0))
             {
-                foreach (GameObject obj in Data.GetItem<TwinsSection>(10).GetItem<TwinsSection>(0).Records)
+                if (Data.Type == TwinsFile.FileType.DemoRM2)
                 {
-                    ObjectNames.Add(obj.ID, obj.Name);
+                    foreach (GameObjectDemo obj in Data.GetItem<TwinsSection>(10).GetItem<TwinsSection>(0).Records)
+                    {
+                        ObjectNames.Add(obj.ID, obj.Name);
+                    }
+                }
+                else
+                {
+                    foreach (GameObject obj in Data.GetItem<TwinsSection>(10).GetItem<TwinsSection>(0).Records)
+                    {
+                        ObjectNames.Add(obj.ID, obj.Name);
+                    }
                 }
             }
             uint gfx_id = 11;
@@ -158,6 +170,8 @@ namespace TwinsanityEditor
                 OpenEditor(ref editScenery, Editors.Scenery, (Controller)c.Node.Tag);
             else if (c is CameraController)
                 OpenEditor(ref editCameras[((CameraController)c).Data.Parent.Parent.ID], Editors.Cameras, (Controller)c.Node.Parent.Tag);
+            else if (c is ScriptEditor)
+                OpenEditor(ref editScript, Editors.Script, (Controller)c.Node.Tag);
             else if (c is SectionController s)
             {
                 if (s.Data.Type == SectionType.ObjectInstance)
@@ -172,6 +186,8 @@ namespace TwinsanityEditor
                     OpenEditor(ref editParticles, Editors.Particles, c);
                 else if (s.Data.Type == SectionType.Camera)
                     OpenEditor(ref editCameras[s.Data.Parent.ID], Editors.Cameras, c);
+                else if (s.Data.Type == SectionType.Script || s.Data.Type == SectionType.ScriptDemo || s.Data.Type == SectionType.ScriptX)
+                    OpenEditor(ref editScript, Editors.Script, c);
             }
         }
 
@@ -190,6 +206,7 @@ namespace TwinsanityEditor
                     case Editors.ChunkLinks: editor_var = new ChunkLinksEditor((ChunkLinksController)cont) { Tag = TopForm }; break;
                     case Editors.Position: editor_var = new PositionEditor((SectionController)cont) { Tag = TopForm }; break;
                     case Editors.Path: editor_var = new PathEditor((SectionController)cont) { Tag = TopForm }; break;
+                    case Editors.Script: editor_var = new ScriptEditor((SectionController)cont) { Tag = TopForm }; break;
                     case Editors.Instance: editor_var = new InstanceEditor((SectionController)cont) { Tag = TopForm }; break;
                     case Editors.Trigger: editor_var = new TriggerEditor((SectionController)cont) { Tag = TopForm }; break;
                     case Editors.Particles: editor_var = new ParticleEditor((ParticleDataController)cont) { Tag = TopForm }; break;
@@ -301,21 +318,9 @@ namespace TwinsanityEditor
         {
             SectionController model_sec = GetItem<SectionController>(6).GetItem<SectionController>(6);
 
-            uint LODcount = spec.Data.K_Count;
-            int targetLOD = 3;
-            if (LODcount > 3)
-            {
-                targetLOD = 0;
-            }
-            else if (LODcount > 2)
-            {
-                targetLOD = 1;
-            }
-            else if (LODcount > 1)
-            {
-                targetLOD = 2;
-            }
-            ModelController c = model_sec.GetItem<ModelController>(spec.Data.LODModelIDs[targetLOD]);
+            //uint LODcount = spec.Data.ModelsAmount;
+            //int targetLOD = LODcount == 1 ? 0 : 1;
+            ModelController c = model_sec.GetItem<ModelController>(spec.Data.LODModelIDs[0]);
 
             var id = c.Data.ID;
             if (!ModelViewers.ContainsKey(id))
@@ -375,6 +380,24 @@ namespace TwinsanityEditor
             foreach (var p in a)
             {
                 CloseModelViewer(p);
+            }
+        }
+
+        public void OpenTextureViewer(TextureController c)
+        {
+            if (texViewer == null || texViewer.IsDisposed)
+            {
+                texViewer = new TextureViewer();
+                texViewer.Texture = c.Data;
+                texViewer.FormClosed += delegate
+                {
+                    texViewer = null;
+                };
+                texViewer.Show();
+            }
+            else
+            {
+                texViewer.Select();
             }
         }
 
@@ -529,19 +552,43 @@ namespace TwinsanityEditor
             catch { return string.Empty; }
         }
 
-        public Instance GetInstance(uint sector, uint id)
+        public ushort? GetInstanceID(uint sector, uint id)
         {
             if (Data.ContainsItem(sector) && Data.GetItem<TwinsSection>(sector).ContainsItem(6))
             {
-                //int i = 0;
-                //foreach (Instance j in ((TwinsSection)((TwinsSection)Data.GetItem(sector)).GetItem(6)).Records)
-                //{
-                //    if (i++ == id)
-                //        return j;
-                //}
-                //throw new System.ArgumentException("The requested section does not have an instance in the specified position.");
                 if (id < Data.GetItem<TwinsSection>(sector).GetItem<TwinsSection>(6).Records.Count)
-                    return (Instance)Data.GetItem<TwinsSection>(sector).GetItem<TwinsSection>(6).Records[(int)id];
+                {
+                    if (Data.GetItem<TwinsSection>(sector).GetItem<TwinsSection>(6).Records[(int)id] is Instance inst)
+                    {
+                        return inst.ObjectID;
+                    }
+                    else if (Data.GetItem<TwinsSection>(sector).GetItem<TwinsSection>(6).Records[(int)id] is InstanceDemo instdemo)
+                    {
+                        return instdemo.ObjectID;
+                    }
+                    return null;
+                }
+                else
+                    return null;
+            }
+            else throw new System.ArgumentException("The requested section does not have an object instance section.");
+        }
+        public Pos GetInstancePos(uint sector, uint id)
+        {
+            if (Data.ContainsItem(sector) && Data.GetItem<TwinsSection>(sector).ContainsItem(6))
+            {
+                if (id < Data.GetItem<TwinsSection>(sector).GetItem<TwinsSection>(6).Records.Count)
+                {
+                    if (Data.GetItem<TwinsSection>(sector).GetItem<TwinsSection>(6).Records[(int)id] is Instance inst)
+                    {
+                        return new Pos(inst.Pos.X, inst.Pos.Y, inst.Pos.Z, inst.Pos.W);
+                    }
+                    else if (Data.GetItem<TwinsSection>(sector).GetItem<TwinsSection>(6).Records[(int)id] is InstanceDemo instdemo)
+                    {
+                        return new Pos(instdemo.Pos.X, instdemo.Pos.Y, instdemo.Pos.Z, instdemo.Pos.W);
+                    }
+                    return null;
+                }
                 else
                     return null;
             }

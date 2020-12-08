@@ -143,7 +143,7 @@ namespace TwinsanityEditor
                 c = new PathController(this, (Twinsanity.Path)a, targetFile);
             else if (a is Instance)
                 c = new InstanceController(this, (Instance)a, targetFile);
-            else if (a is Trigger && CurFile.Type != TwinsFile.FileType.DemoRM2) //trigger controller assumes final instance format
+            else if (a is Trigger)
                 c = new TriggerController(this, (Trigger)a, targetFile);
             else if (a is ColData)
                 c = new ColDataController(this, (ColData)a, targetFile);
@@ -183,6 +183,8 @@ namespace TwinsanityEditor
                 c = new AnimationController(this, (Animation)a, targetFile);
             else if (a is CodeModel)
                 c = new CodeModelController(this, (CodeModel)a, targetFile);
+            else if (a is ActorModel)
+                c = new ActorModelController(this, (ActorModel)a, targetFile);
             else
                 c = new ItemController(this, a, targetFile);
 

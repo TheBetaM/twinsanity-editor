@@ -1,4 +1,6 @@
-﻿namespace Twinsanity
+﻿using System.IO;
+
+namespace Twinsanity
 {
     public class Pos
     {
@@ -19,6 +21,34 @@
         public float Y { get; set; }
         public float Z { get; set; }
         public float W { get; set; }
+    }
+
+    public class TwinsVector4
+    {
+        public float X { get; set; }
+        public float Y { get; set; }
+        public float Z { get; set; }
+        public float W { get; set; }
+        public int GetLength()
+        {
+            return 16;
+        }
+
+        public void Load(BinaryReader reader, int length)
+        {
+            X = reader.ReadSingle();
+            Y = reader.ReadSingle();
+            Z = reader.ReadSingle();
+            W = reader.ReadSingle();
+        }
+
+        public void Save(BinaryWriter writer)
+        {
+            writer.Write(X);
+            writer.Write(Y);
+            writer.Write(Z);
+            writer.Write(W);
+        }
     }
 
     public class CamRot

@@ -170,6 +170,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="AssemblyInfo.cs" />
+    <Compile Include="Controllers\ActorModelController.cs" />
     <Compile Include="Controllers\AIPathController.cs" />
     <Compile Include="Controllers\AnimationController.cs" />
     <Compile Include="Controllers\ArmatureModelController.cs" />
@@ -237,6 +238,12 @@
     <Compile Include="Editors\SceneryEditor.Designer.cs">
       <DependentUpon>SceneryEditor.cs</DependentUpon>
     </Compile>
+    <Compile Include="Editors\ScriptEditor.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Editors\ScriptEditor.Designer.cs">
+      <DependentUpon>ScriptEditor.cs</DependentUpon>
+    </Compile>
     <Compile Include="Editors\TriggerEditor.cs">
       <SubType>Form</SubType>
     </Compile>
@@ -294,6 +301,12 @@
     </Compile>
     <Compile Include="Viewers\RMViewer.cs">
       <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Include="Viewers\TextureViewer.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Viewers\TextureViewer.Designer.cs">
+      <DependentUpon>TextureViewer.cs</DependentUpon>
     </Compile>
     <Compile Include="Viewers\ThreeDViewer.cs">
       <SubType>UserControl</SubType>
@@ -361,6 +374,9 @@
     <EmbeddedResource Include="Properties\Resources.resx">
       <Generator>ResXFileCodeGenerator</Generator>
       <LastGenOutput>Resources.Designer.cs</LastGenOutput>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Viewers\TextureViewer.resx">
+      <DependentUpon>TextureViewer.cs</DependentUpon>
     </EmbeddedResource>
     <EmbeddedResource Include="Viewers\ThreeDViewer.resx">
       <DependentUpon>ThreeDViewer.cs</DependentUpon>

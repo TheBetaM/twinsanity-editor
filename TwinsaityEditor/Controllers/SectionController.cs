@@ -44,6 +44,10 @@ namespace TwinsanityEditor
                 {
                     AddMenu("Extract extra data", Menu_ExtractExtraData);
                 }
+                else if (item.Type == SectionType.Script || item.Type == SectionType.ScriptDemo || item.Type == SectionType.ScriptX)
+                {
+                    AddMenu("Open editor", Menu_OpenEditor);
+                }
             }
             else if (item is TwinsFile f && f.Type == TwinsFile.FileType.RM2)
             {

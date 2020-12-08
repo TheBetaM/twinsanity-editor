@@ -576,7 +576,7 @@ namespace Twinsanity
         {
             public uint Header;
             public List<ScenerySubModel> Models;
-            public Pos[] UnkPos; //4 
+            public Pos[] UnkPos; //5 
         }
 
         public class SceneryStruct

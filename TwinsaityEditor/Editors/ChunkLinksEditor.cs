@@ -199,10 +199,10 @@ namespace TwinsanityEditor
 
         private void GetLoadAreaPos()
         {
-            numericUpDown21.Value = (decimal)link.LoadArea[areap_i].X;
-            numericUpDown28.Value = (decimal)link.LoadArea[areap_i].Y;
-            numericUpDown23.Value = (decimal)link.LoadArea[areap_i].Z;
-            numericUpDown22.Value = (decimal)link.LoadArea[areap_i].W;
+            //numericUpDown21.Value = (decimal)link.LoadArea[areap_i].X;
+            //numericUpDown28.Value = (decimal)link.LoadArea[areap_i].Y;
+            //numericUpDown23.Value = (decimal)link.LoadArea[areap_i].Z;
+            //numericUpDown22.Value = (decimal)link.LoadArea[areap_i].W;
         }
 
         private void button4_Click(object sender, EventArgs e)
@@ -260,10 +260,10 @@ namespace TwinsanityEditor
 
         private void GetAreaMatrix1Pos()
         {
-            numericUpDown29.Value = (decimal)link.AreaMatrix[u1_i].X;
-            numericUpDown32.Value = (decimal)link.AreaMatrix[u1_i].Y;
-            numericUpDown31.Value = (decimal)link.AreaMatrix[u1_i].Z;
-            numericUpDown30.Value = (decimal)link.AreaMatrix[u1_i].W;
+            //numericUpDown29.Value = (decimal)link.AreaMatrix[u1_i].X;
+            //numericUpDown32.Value = (decimal)link.AreaMatrix[u1_i].Y;
+            //numericUpDown31.Value = (decimal)link.AreaMatrix[u1_i].Z;
+            //numericUpDown30.Value = (decimal)link.AreaMatrix[u1_i].W;
         }
 
         private void numericUpDown20_ValueChanged(object sender, EventArgs e)
@@ -273,17 +273,17 @@ namespace TwinsanityEditor
 
         private void addToolStripMenuItem_Click(object sender, EventArgs e)
         {
-            listBox1.Items.Add("link");
-            ChunkLinks.ChunkLink link = new ChunkLinks.ChunkLink { Path = "link".ToCharArray(), ObjectMatrix = new Pos[4], ChunkMatrix = new Pos[4], LoadWall = new Pos[4], LoadArea = new Pos[8], AreaMatrix = new Pos[6], UnknownMatrix = new Pos[6] };
-            link.ObjectMatrix[3].W = link.ChunkMatrix[3].W =
-                link.LoadWall[0].W = link.LoadWall[1].W = link.LoadWall[2].W = link.LoadWall[3].W =
-                link.LoadArea[0].W = link.LoadArea[1].W = link.LoadArea[2].W = link.LoadArea[3].W =
-                link.LoadArea[4].W = link.LoadArea[5].W = link.LoadArea[6].W = link.LoadArea[7].W =
-                link.UnknownMatrix[0].W = link.UnknownMatrix[1].W = link.UnknownMatrix[2].W = link.UnknownMatrix[3].W = link.UnknownMatrix[4].W = link.UnknownMatrix[5].W = 1;
-            link.Unknown = new short[15] { 0, 0, 8, 12, 6, 3, 3, 128, 224, 272, 320, 326, 356, 380, 0 };
-            link.Bytes = new byte[60] { 0, 5, 10, 15, 20, 25, 4, 2, 3, 1, 0, 4, 4, 5, 3, 2, 4, 6, 7, 5, 4, 4, 0, 1, 7, 6, 4, 3, 5, 7, 1, 4, 4, 2, 0, 6, 0, 1, 1, 3, 3, 2, 2, 0, 3, 5, 5, 4, 4, 2, 5, 7, 7, 6, 6, 4, 7, 1, 0, 6, };
-            controller.Data.Links.Add(link);
-            controller.UpdateText();
+            //listBox1.Items.Add("link");
+            //ChunkLinks.ChunkLink link = new ChunkLinks.ChunkLink { Path = "link".ToCharArray(), ObjectMatrix = new Pos[4], ChunkMatrix = new Pos[4], LoadWall = new Pos[4], LoadArea = new Pos[8], AreaMatrix = new Pos[6], UnknownMatrix = new Pos[6] };
+            //link.ObjectMatrix[3].W = link.ChunkMatrix[3].W =
+            //    link.LoadWall[0].W = link.LoadWall[1].W = link.LoadWall[2].W = link.LoadWall[3].W =
+            //    link.LoadArea[0].W = link.LoadArea[1].W = link.LoadArea[2].W = link.LoadArea[3].W =
+            //    link.LoadArea[4].W = link.LoadArea[5].W = link.LoadArea[6].W = link.LoadArea[7].W =
+            //    link.UnknownMatrix[0].W = link.UnknownMatrix[1].W = link.UnknownMatrix[2].W = link.UnknownMatrix[3].W = link.UnknownMatrix[4].W = link.UnknownMatrix[5].W = 1;
+            //link.Unknown = new short[15] { 0, 0, 8, 12, 6, 3, 3, 128, 224, 272, 320, 326, 356, 380, 0 };
+            //link.Bytes = new byte[60] { 0, 5, 10, 15, 20, 25, 4, 2, 3, 1, 0, 4, 4, 5, 3, 2, 4, 6, 7, 5, 4, 4, 0, 1, 7, 6, 4, 3, 5, 7, 1, 4, 4, 2, 0, 6, 0, 1, 1, 3, 3, 2, 2, 0, 3, 5, 5, 4, 4, 2, 5, 7, 7, 6, 6, 4, 7, 1, 0, 6, };
+            //controller.Data.Links.Add(link);
+            //controller.UpdateText();
         }
 
         private void removeToolStripMenuItem_Click(object sender, EventArgs e)
@@ -359,101 +359,101 @@ namespace TwinsanityEditor
 
         private void numericUpDown23_ValueChanged(object sender, EventArgs e)
         {
-            Pos pos = link.LoadArea[areap_i];
-            pos.Z = (float)numericUpDown23.Value;
-            controller.Data.Links[listBox1.SelectedIndex].LoadArea[areap_i] = pos;
+            //Pos pos = link.LoadArea[areap_i];
+            //pos.Z = (float)numericUpDown23.Value;
+            //controller.Data.Links[listBox1.SelectedIndex].LoadArea[areap_i] = pos;
         }
 
         private void numericUpDown28_ValueChanged(object sender, EventArgs e)
         {
-            Pos pos = link.LoadArea[areap_i];
-            pos.Y = (float)numericUpDown28.Value;
-            controller.Data.Links[listBox1.SelectedIndex].LoadArea[areap_i] = pos;
+            //Pos pos = link.LoadArea[areap_i];
+            //pos.Y = (float)numericUpDown28.Value;
+            //controller.Data.Links[listBox1.SelectedIndex].LoadArea[areap_i] = pos;
         }
 
         private void numericUpDown21_ValueChanged(object sender, EventArgs e)
         {
-            Pos pos = link.LoadArea[areap_i];
-            pos.X = (float)numericUpDown21.Value;
-            controller.Data.Links[listBox1.SelectedIndex].LoadArea[areap_i] = pos;
+            //Pos pos = link.LoadArea[areap_i];
+            //pos.X = (float)numericUpDown21.Value;
+            //controller.Data.Links[listBox1.SelectedIndex].LoadArea[areap_i] = pos;
         }
 
         private void numericUpDown29_ValueChanged(object sender, EventArgs e)
         {
-            Pos pos = link.AreaMatrix[u1_i];
-            pos.X = (float)numericUpDown29.Value;
-            controller.Data.Links[listBox1.SelectedIndex].AreaMatrix[u1_i] = pos;
+            //Pos pos = link.AreaMatrix[u1_i];
+            //pos.X = (float)numericUpDown29.Value;
+            //controller.Data.Links[listBox1.SelectedIndex].AreaMatrix[u1_i] = pos;
         }
 
         private void numericUpDown32_ValueChanged(object sender, EventArgs e)
         {
-            Pos pos = link.AreaMatrix[u1_i];
-            pos.Y = (float)numericUpDown32.Value;
-            controller.Data.Links[listBox1.SelectedIndex].AreaMatrix[u1_i] = pos;
+            //Pos pos = link.AreaMatrix[u1_i];
+            //pos.Y = (float)numericUpDown32.Value;
+            //controller.Data.Links[listBox1.SelectedIndex].AreaMatrix[u1_i] = pos;
         }
 
         private void numericUpDown31_ValueChanged(object sender, EventArgs e)
         {
-            Pos pos = link.AreaMatrix[u1_i];
-            pos.Z = (float)numericUpDown31.Value;
-            controller.Data.Links[listBox1.SelectedIndex].AreaMatrix[u1_i] = pos;
+            //Pos pos = link.AreaMatrix[u1_i];
+            //pos.Z = (float)numericUpDown31.Value;
+            //controller.Data.Links[listBox1.SelectedIndex].AreaMatrix[u1_i] = pos;
         }
 
         private void numericUpDown30_ValueChanged(object sender, EventArgs e)
         {
-            Pos pos = link.AreaMatrix[u1_i];
-            pos.W = (float)numericUpDown30.Value;
-            controller.Data.Links[listBox1.SelectedIndex].AreaMatrix[u1_i] = pos;
+            //Pos pos = link.AreaMatrix[u1_i];
+            //pos.W = (float)numericUpDown30.Value;
+            //controller.Data.Links[listBox1.SelectedIndex].AreaMatrix[u1_i] = pos;
         }
 
         private void numericUpDown33_ValueChanged(object sender, EventArgs e)
         {
-            Pos pos = link.UnknownMatrix[u2_i];
-            pos.X = (float)numericUpDown33.Value;
-            controller.Data.Links[listBox1.SelectedIndex].UnknownMatrix[u2_i] = pos;
+            //Pos pos = link.UnknownMatrix[u2_i];
+            //pos.X = (float)numericUpDown33.Value;
+            //controller.Data.Links[listBox1.SelectedIndex].UnknownMatrix[u2_i] = pos;
         }
 
         private void numericUpDown36_ValueChanged(object sender, EventArgs e)
         {
-            Pos pos = link.UnknownMatrix[u2_i];
-            pos.Y = (float)numericUpDown36.Value;
-            controller.Data.Links[listBox1.SelectedIndex].UnknownMatrix[u2_i] = pos;
+            //Pos pos = link.UnknownMatrix[u2_i];
+            //pos.Y = (float)numericUpDown36.Value;
+            //controller.Data.Links[listBox1.SelectedIndex].UnknownMatrix[u2_i] = pos;
         }
 
         private void numericUpDown35_ValueChanged(object sender, EventArgs e)
         {
-            Pos pos = link.UnknownMatrix[u2_i];
-            pos.Z = (float)numericUpDown35.Value;
-            controller.Data.Links[listBox1.SelectedIndex].UnknownMatrix[u2_i] = pos;
+            //Pos pos = link.UnknownMatrix[u2_i];
+            //pos.Z = (float)numericUpDown35.Value;
+            //controller.Data.Links[listBox1.SelectedIndex].UnknownMatrix[u2_i] = pos;
         }
 
         private void numericUpDown24_ValueChanged(object sender, EventArgs e)
         {
-            Pos pos = link.LoadWall[pos_i];
-            pos.W = (float)numericUpDown24.Value;
-            controller.Data.Links[listBox1.SelectedIndex].LoadWall[pos_i] = pos;
+            //Pos pos = link.LoadWall[pos_i];
+            //pos.W = (float)numericUpDown24.Value;
+            //controller.Data.Links[listBox1.SelectedIndex].LoadWall[pos_i] = pos;
         }
 
         private void numericUpDown22_ValueChanged(object sender, EventArgs e)
         {
-            Pos pos = link.LoadArea[areap_i];
-            pos.W = (float)numericUpDown22.Value;
-            controller.Data.Links[listBox1.SelectedIndex].LoadArea[areap_i] = pos;
+            //Pos pos = link.LoadArea[areap_i];
+            //pos.W = (float)numericUpDown22.Value;
+            //controller.Data.Links[listBox1.SelectedIndex].LoadArea[areap_i] = pos;
         }
 
         private void numericUpDown34_ValueChanged(object sender, EventArgs e)
         {
-            Pos pos = link.UnknownMatrix[u2_i];
-            pos.W = (float)numericUpDown34.Value;
-            controller.Data.Links[listBox1.SelectedIndex].UnknownMatrix[u2_i] = pos;
+            //Pos pos = link.UnknownMatrix[u2_i];
+            //pos.W = (float)numericUpDown34.Value;
+            //controller.Data.Links[listBox1.SelectedIndex].UnknownMatrix[u2_i] = pos;
         }
 
         private void GetAreaMatrix2Pos()
         {
-            numericUpDown33.Value = (decimal)link.UnknownMatrix[u2_i].X;
-            numericUpDown36.Value = (decimal)link.UnknownMatrix[u2_i].Y;
-            numericUpDown35.Value = (decimal)link.UnknownMatrix[u2_i].Z;
-            numericUpDown34.Value = (decimal)link.UnknownMatrix[u2_i].W;
+            //numericUpDown33.Value = (decimal)link.UnknownMatrix[u2_i].X;
+            //numericUpDown36.Value = (decimal)link.UnknownMatrix[u2_i].Y;
+            //numericUpDown35.Value = (decimal)link.UnknownMatrix[u2_i].Z;
+            //numericUpDown34.Value = (decimal)link.UnknownMatrix[u2_i].W;
         }
 
         private void UpdateObjectMatrix()

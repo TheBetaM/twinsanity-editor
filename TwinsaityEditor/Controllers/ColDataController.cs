@@ -27,16 +27,17 @@ namespace TwinsanityEditor
 
         protected override void GenText()
         {
-            TextPrev = new string[6];// + Data.Triggers.Count + Data.Groups.Count + Data.Tris.Count + Data.Vertices.Count];
-            TextPrev[0] = $"ID: {Data.ID}";
-            TextPrev[1] = $"Offset: {Data.Offset} Size: {Data.Size}";
-            TextPrev[2] = $"TriggerCount: {Data.Triggers.Count}";
-            TextPrev[3] = $"GroupCount: {Data.Groups.Count}";
-            TextPrev[4] = $"PolyCount: {Data.Tris.Count}";
-            TextPrev[5] = $"VertexCount: {Data.Vertices.Count}";
+            List<string> text = new List<string>();
+            text.Add($"ID: {Data.ID}");
+            text.Add($"Offset: {Data.Offset} Size: {Data.Size}");
+            text.Add($"TriggerCount: {Data.Triggers.Count}");
+            text.Add($"GroupCount: {Data.Groups.Count}");
+            text.Add($"PolyCount: {Data.Tris.Count}");
+            text.Add($"VertexCount: {Data.Vertices.Count}");
+
             /*
             for (int i = 0; i < Data.Triggers.Count; ++i)
-                TextPrev[6 + i] = "Trigger{i}: {Nodes {Data.Triggers[i].Flag1}~{Data.Triggers[i].Flag2;
+                text.Add($"Trigger{i}: Nodes {Data.Triggers[i].Flag1}~{Data.Triggers[i].Flag2}");
             
             for (int i = 0; i < Data.Groups.Count; ++i)
                 TextPrev[6 + Data.Triggers.Count + i] = "Group{i}: {"Offset: {Data.Groups[i].Offset} Count: {Data.Groups[i].Size;
@@ -47,6 +48,7 @@ namespace TwinsanityEditor
             for (int i = 0; i < Data.Vertices.Count; ++i)
                 TextPrev[6 + Data.Triggers.Count + Data.Groups.Count + Data.Tris.Count + i] = "Vertex{i}: ({Data.Vertices[i].X}, {Data.Vertices[i].Y}, {Data.Vertices[i].Z}, {Data.Vertices[i].W})";
                 */
+            TextPrev = text.ToArray();
         }
 
         private void Menu_OpenRMViewer()

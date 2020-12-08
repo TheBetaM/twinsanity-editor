@@ -1,5 +1,6 @@
 ﻿using OpenTK.Graphics.OpenGL;
 using System;
+using System.Runtime.InteropServices;
 
 namespace TwinsanityEditor
 {
@@ -14,6 +15,7 @@ namespace TwinsanityEditor
         public BufferType Type { get; set; }
         public int LinkID { get; set; }
         public int LayerID { get; set; }
+        public int Tex { get; set; }
 
         public enum BufferType
         {
@@ -62,6 +64,27 @@ namespace TwinsanityEditor
             {
                 GL.EnableClientState(ArrayCap.TextureCoordArray);
                 GL.TexCoordPointer(2, TexCoordPointerType.Float, Vertex.SizeOf, Vertex.OffsetOfTex);
+
+                //GL.BufferData(BufferTarget.ArrayBuffer, Vertex.SizeOf * 128, Vtx, BufferUsageHint.DynamicDraw);
+                //GL.BindTexture(TextureTarget.Texture2D, Tex);
+
+                /*
+                foreach (var k in charVtx.Keys)
+                {
+                    if (charVtxOffs[k] == 0) continue;
+                    if (charVtxBufLen < charVtx[k].Length)
+                    {
+                        GL.BufferData(BufferTarget.ArrayBuffer, Vertex.SizeOf * charVtx[k].Length, charVtx[k], BufferUsageHint.DynamicDraw);
+                        charVtxBufLen = charVtx[k].Length;
+                    }
+                    else
+                    {
+                        GL.BufferSubData(BufferTarget.ArrayBuffer, (IntPtr)0, Vertex.SizeOf * charVtxOffs[k], charVtx[k]);
+                    }
+                    GL.BindTexture(TextureTarget.Texture2D, textureCharMap[k]);
+                }
+                */
+                //GL.BindTexture(TextureTarget.Texture2D, 0);
             }
             if ((flags & BufferPointerFlags.Color) != 0)
             {
