@@ -2038,7 +2038,7 @@ namespace TwinsanityEditor
                 }
                 //textures loaded into tex[]... but what next?
 
-                mesh.LoadMeshData(tex);
+                mesh.LoadMeshData();
                 /*
                 mesh.Textures = new int[1];
                 if (tex.Length > 0)
@@ -2120,7 +2120,25 @@ namespace TwinsanityEditor
                     vtx[vtx_id].Type = VertexBufferData.BufferType.Scenery;
                 }
                 mesh.Vertices = vbuffer;
+
+                TextureBuffer texBuffer = null;
+
+                if (file.Data.Type == TwinsFile.FileType.SM2)
+                {
+                    if (matCount > 0 && tex[0] != null)
+                    {
+                        texBuffer = LoadTexture(tex[0].Data);
+                        texBuffer.Bind();
+                    }
+                }
+
                 UpdateVBO(vtx_id);
+
+                if (texBuffer != null)
+                {
+                    texBuffer.Unbind();
+                }
+
                 if (!isUpdate)
                 {
                     static_layers++;
@@ -2134,7 +2152,7 @@ namespace TwinsanityEditor
             zFar = Math.Max(zFar, Math.Max(max_x - min_x, Math.Max(max_y - min_y, max_z - min_z)));
         }
 
-        private int LoadTexture(Texture tex, int quality = 0, bool flip_y = false)
+        private TextureBuffer LoadTexture(Texture tex, int quality = 0, bool flip_y = false)
         {
             Bitmap text = new Bitmap(System.Convert.ToInt32(tex.Width), System.Convert.ToInt32(tex.Height));
             for (int i = 0; i < tex.RawData.Length; i++)
@@ -2143,33 +2161,7 @@ namespace TwinsanityEditor
             if (flip_y)
                 text.RotateFlip(RotateFlipType.RotateNoneFlipY);
 
-            GL.GenTextures(1, out int texture);
-
-            GL.BindTexture(TextureTarget.Texture2D, texture);
-
-            switch (quality)
-            {
-                case 0:
-                default:
-                    GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureMagFilter, (int)All.Linear);
-                    GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureMinFilter, (int)All.Linear);
-                    break;
-                case 1:
-                    GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureMagFilter, (int)All.Nearest);
-                    GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureMinFilter, (int)All.Nearest);
-                    break;
-            }
-
-            GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureWrapS, (int)All.ClampToBorder);
-            GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureWrapT, (int)All.ClampToBorder);
-
-            BitmapData data = text.LockBits(new Rectangle(0, 0, text.Width, text.Height), ImageLockMode.ReadOnly, System.Drawing.Imaging.PixelFormat.Format32bppArgb);
-
-            GL.TexImage2D(TextureTarget.Texture2D, 0, PixelInternalFormat.Rgba, data.Width, data.Height, 0, OpenTK.Graphics.OpenGL.PixelFormat.Bgra, PixelType.UnsignedByte, data.Scan0);
-
-            text.UnlockBits(data);
-
-            GL.BindTexture(TextureTarget.Texture2D, 0);
+            TextureBuffer texture = new TextureBuffer(text.Width, text.Height, text);
 
             return texture;
         }
@@ -2185,12 +2177,15 @@ namespace TwinsanityEditor
             if (scenery_sec.Data.Size < 12)
             {
                 return;
-            }
+            }            
             
             if (scenery_sec.Data.Models.Count <= 0)
             {
                 return;
             }
+
+            return; // No correct positions atm
+
             for (int s = 0; s < scenery_sec.Data.Models.Count; s++)
             {
                 MeshController mesh = mesh_sec.GetItem<MeshController>(model_sec.GetItem<ModelController>(scenery_sec.Data.Models[s].ModelID).Data.MeshID);
@@ -2202,7 +2197,7 @@ namespace TwinsanityEditor
                 //rot_ins *= Matrix3.CreateRotationZ(scenery_sec.Data.Models[s].LocalRotation[2] * MathHelper.TwoPi);
                 // 404: rotation NOT FOUND!!
 
-                Vector4 pos_ins = scenery_sec.Data.Models[s].WorldPosition.ToVec4();
+                Vector4 pos_ins = Vector4.Zero; //todo  //scenery_sec.Data.Models[s].WorldPosition.ToVec4();
                 pos_ins.X = -pos_ins.X;
 
                 Vertex[] vbuffer = new Vertex[mesh.Vertices.Length];

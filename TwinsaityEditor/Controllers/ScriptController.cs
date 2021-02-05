@@ -10,7 +10,7 @@ namespace TwinsanityEditor
         public ScriptController(MainForm topform, Script item, FileController targetFile) : base(topform, item, targetFile)
         {
             Data = item;
-            AddMenu("Open editor", Menu_OpenEditor);
+            //AddMenu("Open editor", Menu_OpenEditor);
         }
 
         protected override string GetName()

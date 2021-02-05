@@ -170,7 +170,7 @@ namespace TwinsanityEditor
                 OpenEditor(ref editScenery, Editors.Scenery, (Controller)c.Node.Tag);
             else if (c is CameraController)
                 OpenEditor(ref editCameras[((CameraController)c).Data.Parent.Parent.ID], Editors.Cameras, (Controller)c.Node.Parent.Tag);
-            else if (c is ScriptEditor)
+            else if (c is ScriptController)
                 OpenEditor(ref editScript, Editors.Script, (Controller)c.Node.Tag);
             else if (c is SectionController s)
             {

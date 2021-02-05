@@ -302,6 +302,7 @@
     <Compile Include="Viewers\RMViewer.cs">
       <SubType>UserControl</SubType>
     </Compile>
+    <Compile Include="Viewers\TextureBuffer.cs" />
     <Compile Include="Viewers\TextureViewer.cs">
       <SubType>Form</SubType>
     </Compile>

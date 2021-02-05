@@ -68,27 +68,23 @@ namespace TwinsanityEditor
             text.Add($"Reference Data");
             text.Add($"");
 
-            text.Add($"UnknownInt32Count: {Data.UI32.Count}");
+            text.Add($"Trigger Script Count: {Data.UI32.Count}");
             for (int i = 0; i < Data.UI32.Count; ++i)
             {
                 var u32 = Data.UI32[i];
                 ushort script = (ushort)((u32 >> 0xA) & 0x3FFF);
-                string scriptLine = Data.UI32[i].ToString("X");
-                scriptLine += " Packed script: " + script.ToString();
+                ushort arg = (ushort)(u32 & 0x3FF);
+                ushort caller = (ushort)((u32 >> 0x18 & 0x1));
+                string scriptLine = "";//Data.UI32[i].ToString("X");
+                scriptLine += " Arg: " + arg;
+                scriptLine += " Caller: " + caller;
+                scriptLine += " Script: " + script.ToString();
                 if (Enum.IsDefined(typeof(DefaultEnums.ScriptID), script))
                 {
                     scriptLine += " " + (DefaultEnums.ScriptID)script;
                 }
                 text.Add(scriptLine);
             }
-
-            text.Add($"OGICount: {Data.OGIs.Count}");
-            for (int i = 0; i < Data.OGIs.Count; ++i)
-                text.Add(Data.OGIs[i].ToString());
-
-            text.Add($"AnimCount: {Data.Anims.Count}");
-            for (int i = 0; i < Data.Anims.Count; ++i)
-                text.Add(Data.Anims[i].ToString());
 
             text.Add($"ScriptCount: {Data.Scripts.Count}");
             for (int i = 0; i < Data.Scripts.Count; ++i)
@@ -108,6 +104,14 @@ namespace TwinsanityEditor
                 }
                 text.Add(script_line);
             }
+
+            text.Add($"OGICount: {Data.OGIs.Count}");
+            for (int i = 0; i < Data.OGIs.Count; ++i)
+                text.Add(Data.OGIs[i].ToString());
+
+            text.Add($"AnimCount: {Data.Anims.Count}");
+            for (int i = 0; i < Data.Anims.Count; ++i)
+                text.Add(Data.Anims[i].ToString());
 
             text.Add($"ObjectCount: {Data.Objects.Count}");
             for (int i = 0; i < Data.Objects.Count; ++i)
