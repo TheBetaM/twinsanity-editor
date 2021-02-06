@@ -29,6 +29,7 @@ namespace TwinsanityEditor
         private Form editParticles;
         private Form editScenery;
         private Form editScript;
+        private Form editObjects;
         private readonly Form[] editInstances = new Form[8], editPositions = new Form[8], editPaths = new Form[8], editTriggers = new Form[8], editCameras = new Form[8];
 
         //Viewers
@@ -172,6 +173,8 @@ namespace TwinsanityEditor
                 OpenEditor(ref editCameras[((CameraController)c).Data.Parent.Parent.ID], Editors.Cameras, (Controller)c.Node.Parent.Tag);
             else if (c is ScriptController)
                 OpenEditor(ref editScript, Editors.Script, (Controller)c.Node.Tag);
+            else if (c is ObjectController)
+                OpenEditor(ref editObjects, Editors.Object, (Controller)c.Node.Parent.Tag);
             else if (c is SectionController s)
             {
                 if (s.Data.Type == SectionType.ObjectInstance)
@@ -188,6 +191,8 @@ namespace TwinsanityEditor
                     OpenEditor(ref editCameras[s.Data.Parent.ID], Editors.Cameras, c);
                 else if (s.Data.Type == SectionType.Script || s.Data.Type == SectionType.ScriptDemo || s.Data.Type == SectionType.ScriptX)
                     OpenEditor(ref editScript, Editors.Script, c);
+                else if (s.Data.Type == SectionType.Object)
+                    OpenEditor(ref editObjects, Editors.Object, c);
             }
         }
 
@@ -212,6 +217,7 @@ namespace TwinsanityEditor
                     case Editors.Particles: editor_var = new ParticleEditor((ParticleDataController)cont) { Tag = TopForm }; break;
                     case Editors.Scenery: editor_var = new SceneryEditor((SceneryDataController)cont) { Tag = TopForm }; break;
                     case Editors.Cameras: editor_var = new CameraEditor((SectionController)cont) { Tag = TopForm }; break;
+                    case Editors.Object: editor_var = new ObjectEditor((SectionController)cont) { Tag = TopForm }; break;
                 }
                 editor_var.Show();
             }
@@ -233,6 +239,7 @@ namespace TwinsanityEditor
                 case Editors.Scenery: editorForm = editScenery; break;
                 case Editors.Particles: editorForm = editParticles; break;
                 case Editors.Cameras: editorForm = editCameras[arg]; break;
+                case Editors.Object: editorForm = editObjects; break;
             }
             CloseForm(ref editorForm);
         }

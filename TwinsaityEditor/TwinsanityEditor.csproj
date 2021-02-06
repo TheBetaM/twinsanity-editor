@@ -226,6 +226,12 @@
     <Compile Include="Editors\InstanceEditor.Designer.cs">
       <DependentUpon>InstanceEditor.cs</DependentUpon>
     </Compile>
+    <Compile Include="Editors\ObjectEditor.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Editors\ObjectEditor.Designer.cs">
+      <DependentUpon>ObjectEditor.cs</DependentUpon>
+    </Compile>
     <Compile Include="Editors\ParticleEditor.cs">
       <SubType>Form</SubType>
     </Compile>
@@ -283,6 +289,7 @@
     <Compile Include="TwinsanityEditor.cs" />
     <Compile Include="Types.cs" />
     <Compile Include="Utils\ControlExt.cs" />
+    <Compile Include="Utils\DataManipulators.cs" />
     <Compile Include="Utils\DictUtils.cs" />
     <Compile Include="Utils\MatrixWrapper.cs" />
     <Compile Include="Utils\MiscUtils.cs" />
