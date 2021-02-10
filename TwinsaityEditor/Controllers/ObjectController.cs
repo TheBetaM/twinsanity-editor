@@ -68,7 +68,7 @@ namespace TwinsanityEditor
             text.Add($"Reference Data");
             text.Add($"");
 
-            text.Add($"Trigger Script Count: {Data.UI32.Count}");
+            text.Add($"Trigger Event Count: {Data.UI32.Count}");
             for (int i = 0; i < Data.UI32.Count; ++i)
             {
                 var u32 = Data.UI32[i];

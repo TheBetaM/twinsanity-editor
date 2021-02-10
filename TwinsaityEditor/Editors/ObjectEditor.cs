@@ -22,6 +22,7 @@ namespace TwinsanityEditor
         private FileController File { get; set; }
         private TwinsFile FileData { get => File.Data; }
 
+        private ListManipulatorEvent EventsManipulator;
         private ListManipulatorUInt16 ScriptsManipulator;
         private ListManipulatorUInt16 ObjectsManipulator;
         private ListManipulatorUInt16 AnimationsManipulator;
@@ -46,6 +47,7 @@ namespace TwinsanityEditor
             controller = c;
             Text = $"Instance Editor (Section {c.Data.Parent.ID})";
             InitializeComponent();
+            EventsManipulator = new ListManipulatorEvent(eventsAdd, eventsRemove, eventsSet, eventsUp, eventsDown, eventsListBox, eventSource, callerSource, scriptSource, argumentSource);
             ScriptsManipulator = new ListManipulatorUInt16(scriptsAdd, scriptsRemove, scriptsSet, scriptsUp, scriptsDown, scriptsListBox, scrtiptIdSource);
             ObjectsManipulator = new ListManipulatorUInt16(objectsAdd, objectsRemove, objectsSet, objectsUp, objectsDown, objectsListBox, objectIdSource);
             OGIManipulator = new ListManipulatorUInt16(ogiAdd, ogiRemove, ogiSet, ogiUp, ogiDown, ogiListBox, ogiIdSource);
@@ -132,6 +134,8 @@ namespace TwinsanityEditor
         }
         private void InitLists()
         {
+            EventsManipulator.SetSource(gameObject.UI32);
+            EventsManipulator.PopulateList();
             ScriptsManipulator.SetSource(gameObject.Scripts);
             ScriptsManipulator.PopulateList();
             ObjectsManipulator.SetSource(gameObject.Objects);
@@ -168,6 +172,8 @@ namespace TwinsanityEditor
             unk4Manipulator.PopulateList();
 
             nameSource.Text = gameObject.Name;
+            uint objType = (gameObject.UnkBitfield >> 0x14 & 0xFF);
+            typeSource.Text = objType.ToString();
             objectId.Text = Convert.ToString(gameObject.ID, 10);
 
             PopulateObjectCommandList();
@@ -628,6 +634,13 @@ namespace TwinsanityEditor
                 lblArguments.Text = "Arguments: 0";
                 PopulateObjectCommandList();
             }
+        }
+
+        private void typeSource_TextChanged(object sender, EventArgs e)
+        {
+            //todo: check for requirements of the new object type
+            // actually todo: this function altogether
+            uint objType = (gameObject.UnkBitfield >> 0x14 & 0xFF);
         }
     }
 }

@@ -361,6 +361,9 @@
     <EmbeddedResource Include="Editors\InstanceEditor.resx">
       <DependentUpon>InstanceEditor.cs</DependentUpon>
     </EmbeddedResource>
+    <EmbeddedResource Include="Editors\ObjectEditor.resx">
+      <DependentUpon>ObjectEditor.cs</DependentUpon>
+    </EmbeddedResource>
     <EmbeddedResource Include="Editors\ParticleEditor.resx">
       <DependentUpon>ParticleEditor.cs</DependentUpon>
     </EmbeddedResource>
