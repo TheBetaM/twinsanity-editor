@@ -469,6 +469,12 @@ namespace TwinsanityEditor
             type1UnkByte2.Text = selectedType1.unkByte2.ToString();
             type1UnkShort.Text = selectedType1.unkUShort1.ToString();
             type1UnkInt.Text = selectedType1.unkInt1.ToString();
+            type1Val1.Text = selectedType1.UnkVal1.ToString();
+            type1Val2.Text = selectedType1.UnkVal2.ToString();
+            type1Val3.Text = selectedType1.UnkVal3.ToString();
+            type1Val4.Text = selectedType1.UnkVal4.ToString();
+            type1Flag1.Checked = selectedType1.UnkFlag1;
+            type1Flag2.Checked = selectedType1.UnkFlag2;
             blockType1IndexChanged = true;
             UpdateType1Bytes();
             UpdateType1Floats();
@@ -482,17 +488,63 @@ namespace TwinsanityEditor
             int i = 0;
             foreach (Byte b in selectedType1.bytes)
             {
+                string byteID = $"{i:000}";
+
+                switch (i)
+                {
+                    default:
+                        break;
+                    case 0:
+                        byteID += " Context";
+                        break;
+                    case 3:
+                        byteID += " Flag";
+                        break;
+                    case 4:
+                        byteID += " X";
+                        break;
+                    case 7:
+                        byteID += " W/X";
+                        break;
+                    case 5:
+                    case 8:
+                        byteID += " Y";
+                        break;
+                    case 6:
+                    case 9:
+                        byteID += " Z";
+                        break;
+                    case 10:
+                        byteID += " Time";
+                        break;
+                    case 0x16:
+                        byteID += " Int";
+                        break;
+                    case 0x2:
+                    case 0xB:
+                    case 0xF:
+                    case 0x10:
+                    case 0x11:
+                    case 0x13:
+                    case 0x14:
+                        byteID += " Float";
+                        break;
+                    case 0x15:
+                        byteID += " Unk";
+                        break;
+                }
+
                 if (b == 255)
                 {
-                    type1Bytes.Items.Add($"{i:000}: N/A");
+                    type1Bytes.Items.Add($"{byteID}: N/A");
                 }
                 else if (b > 127)
                 {
-                    type1Bytes.Items.Add($"{i:000}: Inst. Float #{b - 128}");
+                    type1Bytes.Items.Add($"{byteID}: Inst. Float #{b - 128}");
                 }
                 else
                 {
-                    type1Bytes.Items.Add($"{i:000}: {b}");
+                    type1Bytes.Items.Add($"{byteID}: {b}");
                 }
                 
                 ++i;

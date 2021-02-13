@@ -13,7 +13,7 @@
     <AssemblyName>TwinsanityEditor</AssemblyName>
     <FileAlignment>512</FileAlignment>
     <MyType>WindowsForms</MyType>
-    <TargetFrameworkVersion>v4.5</TargetFrameworkVersion>
+    <TargetFrameworkVersion>v4.7</TargetFrameworkVersion>
     <TargetFrameworkProfile />
     <IsWebBootstrapper>false</IsWebBootstrapper>
     <NuGetPackageImportStamp>
@@ -369,6 +369,9 @@
     </EmbeddedResource>
     <EmbeddedResource Include="Editors\SceneryEditor.resx">
       <DependentUpon>SceneryEditor.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Editors\ScriptEditor.resx">
+      <DependentUpon>ScriptEditor.cs</DependentUpon>
     </EmbeddedResource>
     <EmbeddedResource Include="Editors\TriggerEditor.resx">
       <DependentUpon>TriggerEditor.cs</DependentUpon>
